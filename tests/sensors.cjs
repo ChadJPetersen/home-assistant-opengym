@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { summarize, selectProfile, localDate } = require('../opengym/rootfs/usr/local/lib/opengym-ha/metrics.cjs');
+const { summarize, activeProfiles, localDate } = require('../opengym/rootfs/usr/local/lib/opengym-ha/metrics.cjs');
 const now = new Date('2026-10-27T19:00:00Z');
 assert.equal(localDate(now,'America/Denver'),'2026-10-27');
 const src={
@@ -25,8 +25,7 @@ assert.equal(s.bodyweight,162);
 assert.equal(s.bodyweight_unit,'lb');
 assert.equal(s.routines,2);
 assert.equal(summarize({workouts:[]},{now}).last_workout,null);
-assert.equal(selectProfile({users:[{id:'abc'}]},''),'abc');
-assert.equal(selectProfile({users:[{id:'a'},{id:'b'}]},'b'),'b');
-assert.throws(()=>selectProfile({users:[{id:'a'},{id:'b'}]},''),/Multiple/);
-assert.throws(()=>selectProfile({users:[]},''),/Create/);
+assert.deepEqual(activeProfiles({users:[{id:'abc',name:'One'},{id:'def',name:'Two'}]}).map(u=>u.id),['abc','def']);
+assert.deepEqual(activeProfiles({users:[{id:'abc',disabled:true},{id:'def',disabled:false}]}).map(u=>u.id),['def']);
+assert.deepEqual(activeProfiles({users:[]}),[]);
 console.log('Sensor calculation tests passed');
