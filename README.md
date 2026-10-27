@@ -26,28 +26,28 @@ For full installation, troubleshooting and security considerations see [DOCS.md]
 
 ## nginx and reverse-proxy setup
 
-**For a normal Home Assistant app install, no nginx changes are needed.** This app uses Home Assistant **Ingress**: Supervisor serves openGym under Home Assistant's session-specific \`/api/hassio_ingress/…/\` path and routes it internally to nginx on port **8099**. You do **not** need to:
+**For a normal Home Assistant app install, no nginx changes are needed.** This app uses Home Assistant **Ingress**: Supervisor serves openGym under Home Assistant's session-specific `/api/hassio_ingress/…/` path and routes it internally to nginx on port **8099**. You do **not** need to:
 
-- create an nginx location for \`/opengym\`, \`/gym\` or \`/api/hassio_ingress\`;
+- create an nginx location for `/opengym`, `/gym` or `/api/hassio_ingress`;
 - expose, port-forward or reverse-proxy the openGym container's port 8099;
-- modify Home Assistant's built-in nginx routing, or set an openGym \`BASE_PATH\`.
+- modify Home Assistant's built-in nginx routing, or set an openGym `BASE_PATH`.
 
-Set \`origin\` to your Home Assistant **browser origin** (e.g. \`https://ha.example.com\`, **without** a path or trailing slash), not the Ingress URL.
+Set `origin` to your Home Assistant **browser origin** (e.g. `https://ha.example.com`, **without** a path or trailing slash), not the Ingress URL.
 
 ### If Home Assistant itself is already behind nginx / NGINX Proxy Manager
 
 Keep proxying the **entire Home Assistant site** to Home Assistant's port **8123**. Your existing proxy must:
 
-1. **Preserve the full request path** and query string, including \`/api/hassio_ingress/…\`. Do not strip or rewrite Ingress URLs.
-2. **Support WebSockets** (HTTP/1.1, \`Upgrade\` and \`Connection\` headers).
-3. **Forward the original Host and HTTPS scheme** via \`Host\` and \`X-Forwarded-Proto\`.
-4. **Allow large request bodies** if you upload custom exercise videos/photos. \`client_max_body_size 48m;\` is a practical setting (openGym's default video limit is 40 MiB). Home Assistant Ingress streaming is enabled in the app.
+1. **Preserve the full request path** and query string, including `/api/hassio_ingress/…`. Do not strip or rewrite Ingress URLs.
+2. **Support WebSockets** (HTTP/1.1, `Upgrade` and `Connection` headers).
+3. **Forward the original Host and HTTPS scheme** via `Host` and `X-Forwarded-Proto`.
+4. **Allow large request bodies** if you upload custom exercise videos/photos. `client_max_body_size 48m;` is a practical setting (openGym's default video limit is 40 MiB). Home Assistant Ingress streaming is enabled in the app.
 
 In Home Assistant's **Settings → System → Network → HTTP server**, configure **Trust X-Forwarded-For** and **Trusted proxies** for your actual reverse-proxy IP/address if you're using a traditional reverse proxy. These settings are **not** needed for Home Assistant Cloud/Nabu Casa alone. Do not trust an entire LAN unless necessary.
 
-Example **external nginx** proxy location (inside the existing HTTPS Home Assistant \`server\` block):
+Example **external nginx** proxy location (inside the existing HTTPS Home Assistant `server` block):
 
-\`\`\`nginx
+```nginx
 # Preserve the original path, including /api/hassio_ingress/...
 client_max_body_size 48m;
 
@@ -62,11 +62,11 @@ location / {
     proxy_set_header Connection "upgrade";
     proxy_read_timeout 300s;
 }
-\`\`\`
+```
 
-Replace \`HOME_ASSISTANT_IP\` with the address your nginx host uses to reach Home Assistant. This snippet **does not** configure HTTPS certificates, DNS, firewalls, or a complete nginx server. Use it only if you already maintain an external nginx reverse proxy.
+Replace `HOME_ASSISTANT_IP` with the address your nginx host uses to reach Home Assistant. This snippet **does not** configure HTTPS certificates, DNS, firewalls, or a complete nginx server. Use it only if you already maintain an external nginx reverse proxy.
 
-**NGINX Proxy Manager:** continue using the **existing Home Assistant Proxy Host** (not a new openGym host), enable **Websockets Support**, and set \`client_max_body_size 48m;\` in its advanced settings *if needed for uploads*.
+**NGINX Proxy Manager:** continue using the **existing Home Assistant Proxy Host** (not a new openGym host), enable **Websockets Support**, and set `client_max_body_size 48m;` in its advanced settings *if needed for uploads*.
 
 **No external nginx?** Skip all of this section and install the app normally.
 
