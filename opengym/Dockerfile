@@ -8,6 +8,9 @@ FROM ${BUILD_FROM}
 RUN apk add --no-cache nginx tini curl jq \
     && mkdir -p /run/nginx /data/opengym /usr/share/nginx/html \
     && adduser -D -H -s /sbin/nologin coach
+# Install a standalone, pinned MQTT client without modifying upstream API dependencies.
+RUN mkdir -p /opt/opengym-mqtt && \
+    npm install --prefix /opt/opengym-mqtt --omit=dev --no-audit --no-fund --save-exact mqtt@5.15.2
 WORKDIR /app
 COPY --from=api /app/ /app/
 COPY --from=web /usr/share/nginx/html/ /usr/share/nginx/html/
