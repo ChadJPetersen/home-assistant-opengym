@@ -9,7 +9,7 @@ Self-host [openGym](https://github.com/DuarteSantos8/openGym) inside Home Assist
 - Home Assistant Ingress sidebar panel (automatic subpath routing, no dedicated hostname)
 - Single container bundling pinned upstream API, web UI and exercise media
 - Workout history, custom exercise media, progress photos and accounts preserved in `/data/opengym` and covered by Home Assistant cold backups
-- Password sign-in (recommended under Home Assistant's iframe; passkeys/WebAuthn aren't supported reliably there)
+- Password sign-in with best-effort passkey/WebAuthn support when Home Assistant uses HTTPS (iframe/browser restrictions may still apply)
 - AI Coach via OpenAI, Gemini, Anthropic and OpenAI-compatible/Ollama providers using upstream's standard API image (additional Codex/Claude agent executables are **not** bundled)
 - First-account admin, configurable guest mode, session lifetime, upload quota and AI kill switch
 - Health checks, restricted Ingress listener, CI validation, build smoke test and upstream release monitoring
@@ -34,13 +34,12 @@ In the openGym app's Configuration tab, set:
 
 ```yaml
 home_assistant_sensors: true
-ha_profile_id: ""           # blank = automatically select sole active account
 ha_include_bodyweight: false  # separate, sensitive-data opt-in
 ha_timezone: "America/Denver" # set to your actual IANA timezone
 ha_poll_seconds: 120
 ```
 
-After saving and restarting the app, look for a new **openGym** device under **Settings → Devices & services → MQTT**, with these entities:
+After saving and restarting the app, look for **one openGym MQTT device per active account**, such as **openGym · Vivien** and **openGym · Guest**, under **Settings → Devices & services → MQTT**. Each device has its own entities:
 
 | Entity | What it reports |
 | --- | --- |
@@ -54,7 +53,7 @@ After saving and restarting the app, look for a new **openGym** device under **S
 | Saved routines | Number of stored routines |
 | Latest body weight | **Optional**; requires `ha_include_bodyweight: true` and a saved weight in kg or lb |
 
-The app reads **only one** openGym profile's workout-state file. With one account, leave `ha_profile_id` blank. With multiple accounts, enter **your own openGym Account ID** from **openGym → Settings → Account**; the publisher refuses to automatically aggregate multiple users. Exercise notes, account credentials, photo/media contents, individual exercise names, and raw sets are not published.
+The bridge automatically creates **separate entities for every active openGym profile**; it never combines users’ workout data. Only enable this with the consent of everyone on the openGym server. MQTT device names include each openGym profile name, while MQTT topics use anonymized, stable identifiers. Exercise notes, account credentials, photo/media contents, individual exercise names, and raw sets are not published.
 
 **Privacy warning:** MQTT retains each sensor's last value, and Home Assistant Recorder may preserve historical values. Enable this only on a trusted Home Assistant instance with a trusted MQTT broker. Even workout counts can reveal activity patterns; body weight is deliberately off by default. Turning off `home_assistant_sensors` and restarting the app attempts to remove its retained MQTT discovery/state messages. Home Assistant's already-recorded history is **not deleted**. To remove historic data, use Home Assistant's Recorder/purge procedures separately.
 
@@ -117,3 +116,19 @@ The app's web interface works via the Home Assistant Ingress path. **The standal
 An openGym session cookie is scoped to the Home Assistant host, so use a trusted Home Assistant origin. The required `origin` setting is a single origin: if you open Home Assistant from another hostname, origin-checked writes may fail.
 
 This project is experimental until its complete Home Assistant Supervisor installation is tested. For source and upstream acknowledgments see [openGym](https://github.com/DuarteSantos8/openGym) (AGPL-3.0-or-later).
+
+## Passkeys on HTTPS (experimental)
+
+openGym supports passkeys through WebAuthn. For an attempt within Home Assistant Ingress, set `origin` to the exact **HTTPS** Home Assistant address (for example `https://ha.example.com`) and always launch openGym through that same hostname. The included nginx advertises `publickey-credentials-create=(self)` and `publickey-credentials-get=(self)` to permit same-origin WebAuthn where the browser/embedding Home Assistant frontend allows it.
+
+This is **best-effort**, not guaranteed. Ingress is embedded in an iframe; a cross-origin frame cannot make passkeys work just by setting its own headers. Browser support and parent iframe permissions matter. Leave `password_login: true` until you have *both* registered and successfully used a passkey. Plain `http://homeassistant.local:8123` and LAN-IP HTTP generally cannot use passkeys; HTTPS or localhost is required. See [full notes](opengym/DOCS.md#passkeys-and-https).
+
+## Monthly Home Assistant compatibility agent
+
+A scheduled Codex agent reviews relevant Home Assistant **Supervisor, Core, and app developer documentation** on the **3rd of each month**. When it finds an actionable change, it edits a sandboxed checkout and **opens a pull request** for review; it never automatically merges or deploys. When nothing needs changing, it leaves the repo alone. The existing CI validates proposed changes.
+
+**Required one-time setup:** In this repository open **Settings → Secrets and variables → Actions → New repository secret**, and create `OPENAI_API_KEY` with an OpenAI API platform key (this is not included with a ChatGPT subscription). Then, under **Settings → Actions → General**, permit GitHub Actions to create pull requests. Without the key the scheduled workflow skips AI edits; without PR permission the proposal job can succeed but opening the PR will fail. You can manually run it under **Actions → Monthly Home Assistant compatibility agent → Run workflow**. API use may incur charges. [Workflow definition](.github/workflows/monthly-home-assistant-agent.yml).
+
+## App branding
+
+`opengym/icon.png` and `opengym/logo.png` use the upstream openGym barbell mark from [openGym's SVG icon](https://github.com/DuarteSantos8/openGym/blob/main/frontend/resources/icon.svg). The Home Assistant app store uses these assets in its installed-app list and details page.
