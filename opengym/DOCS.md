@@ -41,3 +41,54 @@ This integration is experimental and is not independently reviewed for medical p
 - **Login or changes refused:** confirm `origin` exactly matches your Home Assistant origin, including port.
 - **504 from AI Coach:** inspect app logs and external provider connectivity.
 - **Mobile app can't connect:** use a separate, securely exposed openGym deployment, not this Ingress-only server.
+
+
+## nginx and Home Assistant Ingress
+
+### Standard installation: no nginx changes
+
+**You do not need to edit any nginx configuration to use this app in Home Assistant.** Ingress handles the app's session-specific `/api/hassio_ingress/…/` route, forwards it to the app's **internal** port 8099, and removes the dynamic prefix before the app receives the request. The app's bundled nginx then forwards `/api/*` to its Node.js API on port 3000. The `/api/hassio_ingress/…/` URL is not a permanent public API endpoint; do not copy it into `origin`.
+
+No extra `location` rule, host-port exposure, custom subpath, or `BASE_PATH` option is necessary. Home Assistant's Ingress frontend is used instead of a dedicated domain.
+
+### If your Home Assistant already uses an external nginx reverse proxy
+
+Continue proxying the *whole Home Assistant site* to Home Assistant's port 8123. There is **no separate openGym Proxy Host**. Your external proxy should:
+
+1. Pass URLs through unchanged: in particular, preserve `/api/hassio_ingress/…/` and its query string.
+2. Support WebSockets and HTTP/1.1 forwarding.
+3. Preserve `Host` and the original request scheme (`X-Forwarded-Proto`) so Home Assistant and openGym use the same origin.
+4. Allow up to 48 MiB request bodies if you want to use openGym's custom exercise video uploads, plus sufficient upload/request timeouts.
+
+Example for **an existing HTTPS nginx Home Assistant server block**:
+
+```nginx
+client_max_body_size 48m;
+
+location / {
+    proxy_pass http://HOME_ASSISTANT_IP:8123;
+    proxy_http_version 1.1;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 300s;
+}
+```
+
+Replace `HOME_ASSISTANT_IP` with the IP/hostname reachable *from your nginx server*. This is only a location snippet; it does not include TLS certificates, firewall rules, or the enclosing `server { }`.
+
+For **NGINX Proxy Manager**, configure the existing Home Assistant Proxy Host, enable **Websockets Support**, and, if you need media uploads, place `client_max_body_size 48m;` in its Advanced configuration. No custom location for openGym is required.
+
+For **Home Assistant behind a traditional reverse proxy**, Home Assistant may also need `use_x_forwarded_for: true` and `trusted_proxies` configured under `http:` in Home Assistant's `configuration.yaml`; only include the IP(s) of trusted reverse proxies, not arbitrary clients. These settings are irrelevant to a plain local setup or Home Assistant Cloud by itself.
+
+### Troubleshooting proxy errors
+
+- **404 under the openGym sidebar:** make sure `/api/hassio_ingress/…` is not being stripped or redirected by the external proxy.
+- **WebSocket failures:** enable WebSockets and verify the Upgrade and Connection forwarding headers.
+- **413 Request Entity Too Large:** raise the external proxy body size limit; the app's own nginx already allows larger custom-exercise media.
+- **Origin mismatch / inability to save:** set `origin` to the exact Home Assistant site origin you used to open the app, with no path/trailing slash, and restart.
+- **Standalone mobile app can't pair:** the mobile app can't reuse Home Assistant's session-specific Ingress URL; a separate stable and secured endpoint is required.
+
