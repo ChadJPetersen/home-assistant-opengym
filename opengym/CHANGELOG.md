@@ -53,5 +53,5 @@ Versions are `<openGym upstream version>-<Home Assistant wrapper revision>`. Rev
 - Every change to the **deployed app** must increment `opengym/config.yaml` `version` and add a matching `## VERSION` heading to this file, with user-facing `Added`, `Changed`, `Fixed`, or `Security` notes.
 - Upstream openGym upgrades must document the old and new upstream versions and link to upstream release notes when possible. Pin the API/web images and build arguments consistently.
 - Changes limited to the README, documentation, CI, tests, or agent prompts do **not** require a new wrapper version unless they affect app deployment.
-- CI verifies the current version has an entry and rejects pull requests that change deployed app files without a version bump and a changelog update.
+- CI verifies the current version has an entry and rejects both pull requests and pushes that change deployed app files without a version bump and a changelog update.
 - Automated agents should propose changelog changes in their pull requests; they must never merge updates automatically.
