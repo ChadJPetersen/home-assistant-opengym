@@ -1,0 +1,38 @@
+name: "openGym"
+version: "1.4.3-1"
+slug: "opengym"
+description: "Self-hosted gym, workout tracking, and AI Coach via Home Assistant Ingress"
+url: "https://github.com/ChadJPetersen/home-assistant-opengym"
+arch:
+  - amd64
+  - aarch64
+stage: experimental
+startup: application
+init: false
+timeout: 300
+ingress: true
+ingress_port: 8099
+panel_icon: "mdi:dumbbell"
+panel_title: "openGym"
+map:
+  - type: data
+    read_only: false
+backup: cold
+options:
+  origin: "http://homeassistant.local:8123"
+  password_login: true
+  allow_guest: false
+  first_user_admin: true
+  session_days: 30
+  media_quota_mb: 200
+  media_uploads: true
+  coach_disabled: false
+schema:
+  origin: str
+  password_login: bool
+  allow_guest: bool
+  first_user_admin: bool
+  session_days: int(1,365)
+  media_quota_mb: int(0,10240)
+  media_uploads: bool
+  coach_disabled: bool
