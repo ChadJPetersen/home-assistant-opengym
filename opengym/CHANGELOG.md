@@ -4,6 +4,13 @@ All notable changes to the **Home Assistant app wrapper** are recorded here, new
 
 Versions are `<openGym upstream version>-<Home Assistant wrapper revision>`. Revisions may contain application features, Home Assistant integration updates, or packaging fixes. Entries describe repository changes; production behavior still depends on Home Assistant and browser versions. Historical entries below summarize the commits made while the wrapper was first developed.
 
+## 1.4.3-6 — 2026-10-27
+
+### Fixed
+- Replaced invalid/corrupted openGym icon and logo files with verified PNG images generated from the official openGym barbell artwork; fixes missing branding in Home Assistant's installed-app list.
+- Added a reproducible branding-generation script and PNG decode tests in CI, so malformed artwork fails validation before deployment.
+- Documented how to refresh app repository metadata and the Home Assistant browser cache to pick up corrected branding.
+
 ## 1.4.3-5 — 2026-10-27
 
 ### Fixed

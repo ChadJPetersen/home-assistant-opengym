@@ -15,8 +15,9 @@ jobs:
           fetch-depth: 0
       - name: Validate YAML, Dockerfile and app configuration
         run: |
-          python3 -m pip install --disable-pip-version-check pyyaml
+          python3 -m pip install --disable-pip-version-check pyyaml Pillow
           python3 tests/validate.py
+          python3 tests/check_branding.py
       - name: Verify current app changelog
         run: python3 tests/check_release.py
       - name: Require version bump and release notes for deployed-app changes

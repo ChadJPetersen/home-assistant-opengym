@@ -167,4 +167,14 @@ A scheduled Codex agent reviews relevant Home Assistant **Supervisor, Core, and 
 
 ## App branding
 
+If openGym runs but its icon is missing from **Settings → Apps**, the earlier
+`icon.png` image was malformed. Version **1.4.3-6** replaces both images with
+verified PNGs. In Home Assistant go to **Settings → Apps → App Store → ⋮ →
+Check for updates**, refresh the browser with **Ctrl+Shift+R** (or **Ctrl+F5**),
+and revisit the installed Apps list. A container reinstall is not necessary just
+to refresh branding. The artwork is generated from the official barbell glyph
+using [scripts/generate_branding.py](scripts/generate_branding.py), and
+GitHub Actions checks that both PNGs are readable and correctly sized.
+
+
 `opengym/icon.png` and `opengym/logo.png` use the upstream openGym barbell mark from [openGym's SVG icon](https://github.com/DuarteSantos8/openGym/blob/main/frontend/resources/icon.svg). The Home Assistant app store uses these assets in its installed-app list and details page.
