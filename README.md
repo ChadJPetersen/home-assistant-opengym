@@ -1,6 +1,6 @@
 # openGym for Home Assistant
 
-Self-host [openGym](https://github.com/DuarteSantos8/openGym) inside Home Assistant using **Ingress**. Run the web UI and Node.js API inside one Supervisor-managed app, without exposing an additional host port.
+Self-host [openGym](https://github.com/DuarteSantos8/openGym) inside Home Assistant using **Ingress**. Run the web UI and Node.js API inside one Supervisor-managed app, with no published host port by default.
 
 > **Status:** Experimental. This is an independently maintained Home Assistant wrapper, not an official openGym or Home Assistant app.
 
@@ -12,12 +12,31 @@ Self-host [openGym](https://github.com/DuarteSantos8/openGym) inside Home Assist
 ## Features
 
 - Home Assistant Ingress sidebar panel (automatic subpath routing, no dedicated hostname)
+- Disabled-by-default API-only port for connecting the official Android/iOS app to the same server and workout history
 - Single container bundling pinned upstream API, web UI and exercise media
 - Workout history, custom exercise media, progress photos and accounts preserved in `/data/opengym` and covered by Home Assistant cold backups
 - Password sign-in with best-effort passkey/WebAuthn support when Home Assistant uses HTTPS (iframe/browser restrictions may still apply)
 - AI Coach via OpenAI, Gemini, Anthropic and OpenAI-compatible/Ollama providers using upstream's standard API image (additional Codex/Claude agent executables are **not** bundled)
 - First-account admin, configurable guest mode, session lifetime, upload quota and AI kill switch
 - Health checks, restricted Ingress listener, CI validation, build smoke test and upstream release monitoring
+
+## Official mobile app pairing and Google Fit sync
+
+Starting with **openGym wrapper 1.4.3-7**, the official openGym Android/iOS app
+can pair with this Home Assistant-hosted server through an optional API-only
+listener on port **8100**. This synchronizes workouts and profiles between
+the phone and the existing Ingress site. On Android, the official app can
+export supported workout data to **Health Connect**, which Google Fit can
+read with appropriate permissions. The Home Assistant container itself does
+not sync with Google Fit.
+
+**The mobile API host port is off by default.** You must explicitly enable
+`8100/tcp` in **Settings → Apps → openGym → Configuration → Network**,
+and connect it through a trusted **HTTPS reverse proxy** or **private VPN**.
+The separate API is *not* protected by Home Assistant login and must never be
+directly forwarded as plain HTTP to the internet.
+
+[Secure HTTPS setup, one-time phone pairing and Health Connect instructions](opengym/MOBILE_ACCESS.md).
 
 ## Direct, bookmarkable URL
 
@@ -29,7 +48,7 @@ https://YOUR-HOME-ASSISTANT/hassio/ingress/YOUR_FULL_ADDON_SLUG
 
 **Find your actual link:** Open **Settings → Apps → openGym → Open Web UI**, then copy and bookmark the browser URL. The full app slug is assigned by Home Assistant and usually ends in `_opengym` (the prefix is repository-specific). If the app's **Show in sidebar** setting is enabled, you can also open its sidebar entry and bookmark that address; Home Assistant may show a different, equivalent frontend route. You can bookmark either launcher or add it to your phone's home screen.
 
-This is an authenticated **Home Assistant page**, not a permanent public API URL. Do **not** bookmark `/api/hassio_ingress/<token>/`; that is a session-specific backend URL. No additional nginx entry, port mapping, `webui`, subpath rewrite or separate openGym hostname is necessary. Home Assistant login is still required, and openGym accounts remain separate.
+This is an authenticated **Home Assistant page**, not a permanent public API URL. Do **not** bookmark `/api/hassio_ingress/<token>/`; that is a session-specific backend URL. No additional nginx entry, port mapping, `webui`, subpath rewrite or separate openGym hostname is necessary **for the Ingress browser UI**. Home Assistant login is still required, and openGym accounts remain separate.
 
 ## Build failure: `npm: not found`
 
@@ -100,7 +119,7 @@ Without a broker, workout tracking and the AI Coach still work normally; the opt
 **For a normal Home Assistant app install, no nginx changes are needed.** This app uses Home Assistant **Ingress**: Supervisor serves openGym under Home Assistant's session-specific `/api/hassio_ingress/…/` path and routes it internally to nginx on port **8099**. You do **not** need to:
 
 - create an nginx location for `/opengym`, `/gym` or `/api/hassio_ingress`;
-- expose, port-forward or reverse-proxy the openGym container's port 8099;
+- expose, port-forward or reverse-proxy the openGym container's **Ingress** port 8099;
 - modify Home Assistant's built-in nginx routing, or set an openGym `BASE_PATH`.
 
 Set `origin` to your Home Assistant **browser origin** (e.g. `https://ha.example.com`, **without** a path or trailing slash), not the Ingress URL.
@@ -147,7 +166,7 @@ More explanation and troubleshooting: [nginx and Home Assistant Ingress](opengym
 
 Home Assistant Ingress handles authentication **to the app**, but openGym still requires its own local profile for per-person workout data and AI Coach administration. A Home Assistant user identity is not automatically mapped to an openGym account.
 
-The app's web interface works via the Home Assistant Ingress path. **The standalone openGym Android/iOS mobile app cannot pair using a Home Assistant Ingress URL** because the mobile app has no Home Assistant session or permanent reachable API URL. For mobile pairing, use an independently secured direct HTTPS deployment.
+The app's web interface works via the Home Assistant Ingress path. **The standalone openGym Android/iOS app cannot pair using a Home Assistant Ingress URL** because the phone app has no Home Assistant session. The new opt-in mobile API listener can instead be exposed through an independently secured HTTPS reverse proxy or private VPN; see [mobile access](opengym/MOBILE_ACCESS.md).
 
 An openGym session cookie is scoped to the Home Assistant host, so use a trusted Home Assistant origin. The required `origin` setting is a single origin: if you open Home Assistant from another hostname, origin-checked writes may fail.
 

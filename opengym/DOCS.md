@@ -35,6 +35,16 @@ The full slug is repository-specific and usually ends with `_opengym`. **Do not 
 
 **Restart ≠ Update:** restarting a running app only restarts its installed container. Refreshing the repository checks GitHub metadata but does not automatically replace the installed app. The new container is installed through the app's **Update** action.
 
+## Optional official Android / iOS mobile pairing
+
+Since wrapper `1.4.3-7`, you can connect the official mobile app to this
+Home Assistant openGym server without a separate workout database. Use the
+disabled-by-default, API-only port `8100/tcp` behind a **trusted HTTPS proxy**
+or private VPN; the mobile API uses openGym's pairing codes rather than Home
+Assistant Ingress authentication. See [MOBILE_ACCESS.md](MOBILE_ACCESS.md)
+for setup, account pairing, network security, and Android Health Connect /
+Google Fit integration.
+
 ## Accounts and administration
 
 Password login is enabled by default, since WebAuthn/passkeys are unreliable inside an embedded iframe. Create the **first** openGym account yourself, immediately after starting the application. First-user admin is enabled; the first user becomes admin. Home Assistant's own sign-in does **not** automatically create or authenticate an openGym account. For added security you can disable guest mode (the default).
@@ -114,7 +124,7 @@ All server-side data including logins, signing secret, workout states and upload
 
 This deployment uses Home Assistant Ingress with a changing internal path prefix. openGym assets are relative and its API base derives from its current browser pathname. The Home Assistant proxy removes that prefix and the bundled nginx handles the resulting `/api/` and asset requests.
 
-WebAuthn may not work due to iframe limitations; use password login. Standalone openGym mobile pairing cannot normally work through Home Assistant Ingress, because the standalone app has no Home Assistant session. If you need mobile pairing, deploy openGym on an external stable HTTPS address with separate authentication.
+WebAuthn may not work due to iframe limitations; use password login. Standalone mobile pairing cannot use the Home Assistant Ingress URL. Use the optional mobile API port behind HTTPS as described in [MOBILE_ACCESS.md](MOBILE_ACCESS.md).
 
 If Home Assistant is opened from a different origin than the configured `origin`, API calls may be blocked by upstream origin validation. Use a consistent hostname.
 
@@ -125,7 +135,7 @@ This integration is experimental and is not independently reviewed for medical p
 - **Blank page:** clear the browser cache, then check app logs and that your Home Assistant ingress path is proxying the frontend.
 - **Login or changes refused:** confirm `origin` exactly matches your Home Assistant origin, including port.
 - **504 from AI Coach:** inspect app logs and external provider connectivity.
-- **Mobile app can't connect:** use a separate, securely exposed openGym deployment, not this Ingress-only server.
+- **Mobile app can't connect:** see [MOBILE_ACCESS.md](MOBILE_ACCESS.md) to verify the opt-in port, HTTPS proxy, pairing and CORS.
 
 
 ## nginx and Home Assistant Ingress
@@ -175,7 +185,7 @@ For **Home Assistant behind a traditional reverse proxy**, Home Assistant may al
 - **WebSocket failures:** enable WebSockets and verify the Upgrade and Connection forwarding headers.
 - **413 Request Entity Too Large:** raise the external proxy body size limit; the app's own nginx already allows larger custom-exercise media.
 - **Origin mismatch / inability to save:** set `origin` to the exact Home Assistant site origin you used to open the app, with no path/trailing slash, and restart.
-- **Standalone mobile app can't pair:** the mobile app can't reuse Home Assistant's session-specific Ingress URL; a separate stable and secured endpoint is required.
+- **Standalone mobile app can't pair:** use the opt-in API-only listener through HTTPS, not the Home Assistant Ingress session URL. See [MOBILE_ACCESS.md](MOBILE_ACCESS.md).
 
 
 ## Passkeys and HTTPS

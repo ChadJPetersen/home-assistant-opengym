@@ -21,7 +21,7 @@ COPY --from=api /app/ /app/
 COPY --from=web /usr/share/nginx/html/ /usr/share/nginx/html/
 COPY rootfs/ /
 RUN chmod 0755 /usr/local/bin/start-opengym && nginx -t
-EXPOSE 8099
+EXPOSE 8099 8100
 HEALTHCHECK --interval=60s --timeout=10s --retries=3 CMD curl -fsS http://127.0.0.1:8099/api/health >/dev/null || exit 1
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/usr/local/bin/start-opengym"]

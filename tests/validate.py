@@ -17,7 +17,7 @@ assert repo['url'] == config['url']
 assert config['slug'] == 'opengym'
 assert config['ingress'] is True
 assert config['ingress_port'] == 8099
-assert not config.get('ports'), 'Ingress-only addon must not expose host ports'
+assert config.get('ports') == {'8100/tcp': None}, 'Mobile host port must be disabled by default'
 assert {'amd64','aarch64'} <= set(config['arch'])
 assert set(config['options']) == set(config['schema'])
 assert 'data' in [x['type'] for x in config['map']]
@@ -37,7 +37,9 @@ for arch in ('amd64','aarch64'):
 assert 'ARG BUILD_FROM=ghcr.io/home-assistant/base:latest' in docker
 assert 'apk add --no-cache nodejs npm' in docker
 assert 'node --version && npm --version' in docker
-assert '8099' in nginx and '127.0.0.1:3000' in nginx
+assert '8099' in nginx and '8100' in nginx and '127.0.0.1:3000' in nginx
+assert 'listen 8100;' in nginx and 'return 404;' in nginx
+assert 'EXPOSE 8099 8100' in docker
 assert 'api/media/' in nginx and '48m' in nginx
 assert 'jq' in docker and 'jq -r' in run
 assert 'DATA_DIR=/data/opengym' in run

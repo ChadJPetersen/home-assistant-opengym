@@ -49,7 +49,7 @@ jobs:
           cat >/tmp/opengym-smoke/options.json <<'JSON'
           {"origin":"http://localhost:8123","password_login":true,"allow_guest":false,"first_user_admin":true,"session_days":30,"media_quota_mb":200,"media_uploads":true,"coach_disabled":false,"home_assistant_sensors":false,"ha_include_bodyweight":false,"ha_timezone":"UTC","ha_poll_seconds":120}
           JSON
-          docker run -d --name opengym-test -v /tmp/opengym-smoke:/data -p 127.0.0.1:18099:8099 opengym-ha:test
+          docker run -d --name opengym-test -v /tmp/opengym-smoke:/data -p 127.0.0.1:18099:8099 -p 127.0.0.1:18100:8100 opengym-ha:test
           trap 'docker logs opengym-test; docker rm -f opengym-test' EXIT
           for n in $(seq 1 45); do
             if curl -fsS http://127.0.0.1:18099/api/health > /tmp/health.json; then break; fi
@@ -58,3 +58,14 @@ jobs:
           python3 -c 'import json; assert json.load(open("/tmp/health.json"))["ok"] is True'
           curl -fsS http://127.0.0.1:18099/ | grep -qi '<html'
           curl -fsS http://127.0.0.1:18099/api/config > /dev/null
+          # API-only listener for native apps must not expose the web frontend.
+          curl -fsS http://127.0.0.1:18100/api/health >/dev/null
+          curl -fsS http://127.0.0.1:18100/api/config >/dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18100/)" = "404"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18100/index.html)" = "404"
+          curl -fsS -X OPTIONS -D /tmp/mobile-cors.hdr -o /dev/null \
+            -H 'Origin: https://localhost' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: content-type,authorization' \
+            http://127.0.0.1:18100/api/pair/redeem
+          grep -qi '^access-control-allow-origin: https://localhost' /tmp/mobile-cors.hdr

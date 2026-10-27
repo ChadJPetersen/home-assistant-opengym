@@ -4,6 +4,18 @@ All notable changes to the **Home Assistant app wrapper** are recorded here, new
 
 Versions are `<openGym upstream version>-<Home Assistant wrapper revision>`. Revisions may contain application features, Home Assistant integration updates, or packaging fixes. Entries describe repository changes; production behavior still depends on Home Assistant and browser versions. Historical entries below summarize the commits made while the wrapper was first developed.
 
+## 1.4.3-7 — 2026-10-27
+
+### Added
+- Opt-in, disabled-by-default mobile API port `8100/tcp` to pair the official openGym Android/iOS app with the **same** Home Assistant-hosted profile, workouts and AI Coach.
+- API-only nginx listener serves `/api/*` through the existing backend, including one-time pairing, synchronization and custom-exercise media; all non-API paths return 404.
+- Mobile pairing, HTTPS reverse proxy, private VPN and Android Health Connect/Google Fit setup documentation.
+- Startup smoke tests verify the mobile endpoint, blocked frontend and Android WebView CORS preflight.
+
+### Security
+- The new host port maps to `null` (disabled) by default and is **not** protected by Home Assistant Ingress authentication.
+- If explicitly enabled, openGym handles pairing codes and bearer tokens; TLS must be provided by a trusted external proxy. Do not forward plain HTTP TCP 8100 directly to the public internet.
+
 ## 1.4.3-6 — 2026-10-27
 
 ### Fixed

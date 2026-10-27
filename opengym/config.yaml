@@ -1,5 +1,5 @@
 name: "openGym"
-version: "1.4.3-6"
+version: "1.4.3-7"
 slug: "opengym"
 description: "Self-hosted gym, workout tracking, and AI Coach via Home Assistant Ingress"
 url: "https://github.com/ChadJPetersen/home-assistant-opengym"
@@ -15,6 +15,12 @@ ingress_port: 8099
 ingress_stream: true  # stream large custom-exercise media uploads through Supervisor
 panel_icon: "mdi:dumbbell"
 panel_title: "openGym"
+# Optional mobile API: NO host exposure until deliberately enabled in Network UI.
+# Plain HTTP: only use behind a trusted HTTPS proxy or private VPN.
+ports:
+  8100/tcp: null
+ports_description:
+  8100/tcp: "Opt-in mobile API; proxy HTTPS, never expose plain HTTP publicly"
 map:
   - type: data
     read_only: false
