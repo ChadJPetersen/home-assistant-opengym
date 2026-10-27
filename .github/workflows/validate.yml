@@ -11,10 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Validate YAML, Dockerfile and app configuration
         run: |
           python3 -m pip install --disable-pip-version-check pyyaml
           python3 tests/validate.py
+      - name: Verify current app changelog
+        run: python3 tests/check_release.py
+      - name: Require version bump and changelog for deployable PR changes
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 tests/check_release.py --base "$BASE_SHA"
       - name: Test workout sensor calculations
         run: node tests/sensors.cjs
       - name: Check shell syntax
