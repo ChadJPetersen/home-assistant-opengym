@@ -30,6 +30,13 @@ assert (addon/'rootfs/usr/local/lib/opengym-ha/bridge.cjs').exists()
 upstream = build['args']['OPENGYM_VERSION']
 assert config['version'].startswith(upstream + '-')
 assert f'OPENGYM_VERSION={upstream}' in docker
+# Build must also succeed when Supervisor supplies Home Assistant's base image,
+# which does NOT include Node.js/npm by default.
+for arch in ('amd64','aarch64'):
+    assert build['build_from'][arch] == 'ghcr.io/home-assistant/base:latest'
+assert 'ARG BUILD_FROM=ghcr.io/home-assistant/base:latest' in docker
+assert 'apk add --no-cache nodejs npm' in docker
+assert 'node --version && npm --version' in docker
 assert '8099' in nginx and '127.0.0.1:3000' in nginx
 assert 'api/media/' in nginx and '48m' in nginx
 assert 'jq' in docker and 'jq -r' in run

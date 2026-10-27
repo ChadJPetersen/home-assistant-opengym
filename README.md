@@ -31,6 +31,12 @@ https://YOUR-HOME-ASSISTANT/hassio/ingress/YOUR_FULL_ADDON_SLUG
 
 This is an authenticated **Home Assistant page**, not a permanent public API URL. Do **not** bookmark `/api/hassio_ingress/<token>/`; that is a session-specific backend URL. No additional nginx entry, port mapping, `webui`, subpath rewrite or separate openGym hostname is necessary. Home Assistant login is still required, and openGym accounts remain separate.
 
+## Build failure: `npm: not found`
+
+Versions through `1.4.3-4` could fail to install or update on Home Assistant Supervisor with `/bin/ash: npm: not found`. Supervisor uses the Home Assistant base image, whereas earlier repository builds used a Node base image. Version `1.4.3-5` installs Node.js and npm explicitly and tests against the same base Supervisor uses.
+
+**Recovery:** In Home Assistant, open **Settings → Apps → App Store → ⋮ → Check for updates**, then install/update to `1.4.3-5`. You do not need to change your nginx configuration, restart Home Assistant, or uninstall the existing app. If the build fails again, inspect **Settings → System → Logs → Supervisor** and share the new `ERROR` and `Dockerfile` lines.
+
 ## Force Home Assistant to check for an update
 
 Each deployable app update is documented in the [wrapper changelog](opengym/CHANGELOG.md). App-version changes and release notes are enforced by CI on pull requests and pushes.

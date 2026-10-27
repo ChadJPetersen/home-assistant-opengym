@@ -1,5 +1,5 @@
 build_from:
-  amd64: node:22.23.4-alpine
-  aarch64: node:22.23.4-alpine
+  amd64: ghcr.io/home-assistant/base:latest
+  aarch64: ghcr.io/home-assistant/base:latest
 args:
   OPENGYM_VERSION: "1.4.3"

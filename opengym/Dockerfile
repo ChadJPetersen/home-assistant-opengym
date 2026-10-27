@@ -1,15 +1,20 @@
 # syntax=docker/dockerfile:1
 # Both upstream images are pinned to the same published release.
-ARG BUILD_FROM=node:22.23.4-alpine
+ARG BUILD_FROM=ghcr.io/home-assistant/base:latest
 ARG OPENGYM_VERSION=1.4.3
 FROM ghcr.io/duartesantos8/opengym-api:${OPENGYM_VERSION} AS api
 FROM ghcr.io/duartesantos8/opengym-web:${OPENGYM_VERSION} AS web
 FROM ${BUILD_FROM}
-RUN apk add --no-cache nginx tini curl jq \
+# Supervisor supplies ghcr.io/home-assistant/base as BUILD_FROM; unlike the
+# node:alpine image used by earlier CI, this image does not include node/npm.
+# Both node and npm are needed: node runs the API and MQTT bridge, while npm
+# installs the pinned MQTT dependency below.
+RUN apk add --no-cache nodejs npm nginx tini curl jq \
     && mkdir -p /run/nginx /data/opengym /usr/share/nginx/html \
     && adduser -D -H -s /sbin/nologin coach
 # Install a standalone, pinned MQTT client without modifying upstream API dependencies.
-RUN mkdir -p /opt/opengym-mqtt && \
+RUN node --version && npm --version && \
+    mkdir -p /opt/opengym-mqtt && \
     npm install --prefix /opt/opengym-mqtt --omit=dev --no-audit --no-fund --save-exact mqtt@5.15.2
 WORKDIR /app
 COPY --from=api /app/ /app/
