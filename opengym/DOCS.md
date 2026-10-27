@@ -42,8 +42,10 @@ Home Assistant openGym server without a separate workout database. Use the
 disabled-by-default, API-only port `8100/tcp` behind a **trusted HTTPS proxy**
 or private VPN; the mobile API uses openGym's pairing codes rather than Home
 Assistant Ingress authentication. See [MOBILE_ACCESS.md](MOBILE_ACCESS.md)
-for setup, account pairing, network security, and Android Health Connect /
-Google Fit integration.
+for nginx and NGINX Proxy Manager setup, pairing, network security, and Android
+Health Connect / Google Fit integration. Wrapper `1.4.3-8` also provides a
+clearer mobile-port label in the Home Assistant Network tab and a
+[copyable nginx HTTPS vhost example](../examples/nginx/opengym-mobile.conf.example).
 
 ## Accounts and administration
 

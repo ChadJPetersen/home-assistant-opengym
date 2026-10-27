@@ -18,6 +18,12 @@ assert config['slug'] == 'opengym'
 assert config['ingress'] is True
 assert config['ingress_port'] == 8099
 assert config.get('ports') == {'8100/tcp': None}, 'Mobile host port must be disabled by default'
+translations = yaml.safe_load((addon / 'translations/en.yaml').read_text())
+assert '8100/tcp' in translations.get('network', {}), 'Explain mobile API port in HA Network UI'
+example = (root / 'examples/nginx/opengym-mobile.conf.example').read_text()
+assert 'proxy_pass http://192.0.2.10:8100;' in example
+assert 'ssl_certificate ' in example and 'location ^~ /api/' in example
+assert 'add_header Access-Control-Allow-Origin' not in example, 'Upstream owns CORS'
 assert {'amd64','aarch64'} <= set(config['arch'])
 assert set(config['options']) == set(config['schema'])
 assert 'data' in [x['type'] for x in config['map']]

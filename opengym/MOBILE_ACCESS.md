@@ -1,6 +1,6 @@
 # Connect the official openGym phone app to Home Assistant
 
-Version **1.4.3-7** adds an optional **API-only** port to the Home Assistant
+Version **1.4.3-7** introduced an optional **API-only** port to the Home Assistant
 openGym wrapper. It uses the **same** openGym API, persistent account database,
 workout history, routines, and AI Coach as the existing Ingress web UI.
 No separate openGym installation or database is required.
@@ -28,7 +28,7 @@ feature is opt-in and experimental.
 ## Step 1: Update and back up
 
 1. Back up openGym through Home Assistant before changing access settings.
-2. Update to `1.4.3-7` using **Settings → Apps → App Store → ⋮ →
+2. Update to `1.4.3-8` using **Settings → Apps → App Store → ⋮ →
    Check for updates**, then **Update** on the openGym app page.
 3. Verify the normal Home Assistant Ingress interface still works.
 4. Leave `origin` configured as your exact **Home Assistant web address**,
@@ -66,6 +66,110 @@ mapped 8100 port over the VPN. Use TLS even over the VPN when possible.
 The official Android app can accept a manually entered LAN `http://` URL,
 but that transport is not encrypted; do not use it on untrusted networks.
 
+### Standard nginx: new virtual host (copy/paste example)
+
+**Do not change nginx *inside* the openGym app** or your existing Home
+Assistant reverse-proxy block. The web UI still uses the HA ingress route.
+Add a **second** virtual host for the mobile API only.
+
+1. Use a DNS hostname such as `gym.example.com` pointing to your existing
+   HTTPS reverse proxy. Ensure you have a valid TLS certificate for this name.
+   If you use an existing wildcard certificate, you can reuse it here.
+2. Confirm openGym is updated to **1.4.3-8**; take an app backup. Under
+   **Settings → Apps → openGym → Configuration → Network**, set the
+   `8100/tcp` mapping to host port `8100`. Save and restart the app.
+   *Do not enable the port until your proxy/network restrictions are ready.*
+3. Download/copy [the complete nginx example](../examples/nginx/opengym-mobile.conf.example)
+   onto the **nginx proxy machine**, e.g. as
+   `/etc/nginx/sites-available/opengym-mobile.conf` (Debian/Ubuntu).
+   Replace:
+   - `gym.example.com` with **your mobile API hostname**, not the HA hostname;
+   - `192.0.2.10` with the Home Assistant host's **LAN IP**;
+   - the two `ssl_certificate` paths with your actual cert/key paths.
+4. On an nginx install that uses `sites-enabled`, enable the new site:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/opengym-mobile.conf \
+       /etc/nginx/sites-enabled/opengym-mobile.conf
+   ```
+   Use `/etc/nginx/conf.d/opengym-mobile.conf` directly instead on
+   installations that include `conf.d/*.conf`. Do **not** create both copies,
+   and confirm the file is loaded by your main `nginx.conf`.
+5. Validate **before** reloading and preserve the working HA proxy if it
+   reports errors:
+   ```bash
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+   Run the second command only if the first succeeds. If nginx runs inside
+   a container, execute `nginx -t` and `nginx -s reload` *inside the
+   nginx container* rather than using systemctl.
+6. Verify `https://gym.example.com/api/health` returns JSON and `/`
+   returns HTTP 404, then follow the CORS and pairing checks below.
+
+**Important:** A valid HTTPS certificate must be provisioned **before**
+nginx will successfully load the `listen 443 ssl` block. If your reverse
+proxy already terminates HTTPS for other services, add this as another
+hostname on that proxy; do **not** modify Home Assistant's `8123`
+upstream. The example includes a redirect from port 80 to HTTPS, but
+certificate issuance itself depends on your proxy/DNS/ACME arrangement.
+For any remote-access hostname, also apply firewall controls and keep the
+openGym API updated. The API endpoints remain publicly reachable to
+unauthenticated clients for pairing/login, by design, even with HTTPS.
+
+### NGINX Proxy Manager: a second Proxy Host
+
+If you manage nginx through **NGINX Proxy Manager (NPM)**, don't copy the
+traditional nginx `server { }` example into its **Advanced** box.
+Instead, open NPM → **Hosts → Proxy Hosts → Add Proxy Host** and set:
+
+| Field | Value |
+| --- | --- |
+| Domain Names | `gym.example.com` (replace with your hostname) |
+| Scheme | `http` |
+| Forward Hostname / IP | The Home Assistant **host's LAN IP**, not `homeassistant.local` from the app container |
+| Forward Port | `8100` |
+| Block Common Exploits | Enable if it does not interfere with API requests |
+| Websockets Support | Optional; the mobile pairing API uses ordinary HTTP requests |
+
+Under the **SSL** tab select/request a valid certificate, enable
+**Force SSL**, and save. NPM itself will forward requests including
+`/api/...`. Only expose the NPM HTTPS entry point, not the raw 8100
+port, to untrusted networks.
+
+For video uploads, the NPM proxy host's **Advanced** section can contain
+only this additional directive:
+
+```nginx
+client_max_body_size 48m;
+```
+
+**Do not** paste a complete `server { }` block there, add duplicate
+`Access-Control-Allow-Origin` headers, add an `OPTIONS` handler, or
+route the mobile hostname to Home Assistant port `8123`: the official
+app's requests must reach openGym port `8100` directly through HTTPS.
+
+### Keep existing Home Assistant nginx configuration untouched
+
+Your current `https://ha.example.com` virtual host should still proxy
+to Home Assistant on `8123` (including all `/api/hassio_ingress/...`
+routes). The mobile hostname is **another server/vhost** that proxies
+only `/api/` to port `8100`. Do not create a `/gym` subpath inside
+the existing Home Assistant site: the official phone app expects a stable
+server URL and needs to make `/api/` requests without the HA session.
+
+Network and API transport:
+
+| Flow | Address / port | Authentication |
+| --- | --- | --- |
+| Browser → HA | `https://ha.example.com` → `8123` → ingress `8099` | Home Assistant + openGym |
+| Phone → proxy | `https://gym.example.com` → `8100` → openGym API `3000` | openGym pairing token |
+| Raw host port (opt-in) | `http://HOME_ASSISTANT_IP:8100` | openGym only; **no TLS** |
+
+The separate host port can be reached over your LAN while enabled. Limit
+network access to your nginx machine and trusted devices where your
+firewall permits it. **Never forward raw TCP 8100 from the public
+internet.**
+
 ### Test before pairing
 
 From a device able to reach your HTTPS endpoint:
@@ -84,7 +188,14 @@ curl -si -X OPTIONS https://gym.example.com/api/pair/redeem \
 # Expected: 204 and Access-Control-Allow-Origin: https://localhost
 ```
 
-The iOS app uses `Origin: capacitor://localhost` instead. If the response
+The iOS app uses `Origin: capacitor://localhost` instead.
+
+If `/api/health` returns 502/504, check that the external proxy can reach
+`http://HOME_ASSISTANT_IP:8100/api/health` over its own network and that
+the Home Assistant Network port mapping is actually enabled. If the proxy
+can't resolve the hostname, check DNS; if TLS errors occur, check the
+certificate before testing pairing. Avoid running a manual `nginx -t`
+or reload inside the Home Assistant openGym container itself. If the response
 is a redirect or an HTML login page, the proxy is interfering. If multiple
 `Access-Control-Allow-Origin` headers appear, remove proxy-added CORS
 headers. Do not point the phone at the HA Ingress launcher or its rotating

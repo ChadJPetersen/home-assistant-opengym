@@ -78,3 +78,10 @@ configuration:
       How frequently to refresh summary sensor values from the selected
       openGym profile. Allowed 30–3600 seconds; default 120 seconds.
       This does not change openGym's own workout sync interval.
+
+# Mobile app access is a separate port, not part of Ingress.
+network:
+  8100/tcp: >-
+    Optional official Android/iOS app API. Disabled by default. Enable only
+    behind an HTTPS reverse proxy or private VPN; the port itself is HTTP
+    and does not use Home Assistant authentication. See MOBILE_ACCESS.md.

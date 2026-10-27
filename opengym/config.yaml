@@ -1,5 +1,5 @@
 name: "openGym"
-version: "1.4.3-7"
+version: "1.4.3-8"
 slug: "opengym"
 description: "Self-hosted gym, workout tracking, and AI Coach via Home Assistant Ingress"
 url: "https://github.com/ChadJPetersen/home-assistant-opengym"
@@ -20,7 +20,7 @@ panel_title: "openGym"
 ports:
   8100/tcp: null
 ports_description:
-  8100/tcp: "Opt-in mobile API; proxy HTTPS, never expose plain HTTP publicly"
+  8100/tcp: "Official phone app API (HTTP); enable only behind HTTPS proxy or private VPN"
 map:
   - type: data
     read_only: false

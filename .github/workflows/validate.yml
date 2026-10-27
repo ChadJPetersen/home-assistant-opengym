@@ -43,6 +43,18 @@ jobs:
           docker run --rm --entrypoint npm opengym-ha:test --version
       - name: nginx configuration smoke test
         run: docker run --rm --entrypoint nginx opengym-ha:test -t
+      - name: Validate external HTTPS nginx proxy example
+        run: |
+          # Test a dedicated nginx vhost with temporary self-signed credentials.
+          mkdir -p /tmp/opengym-mobile-cert
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -subj "/CN=gym.example.com" \
+            -keyout /tmp/opengym-mobile-cert/privkey.pem \
+            -out /tmp/opengym-mobile-cert/fullchain.pem >/dev/null 2>&1
+          docker run --rm --entrypoint nginx \
+            -v /tmp/opengym-mobile-cert:/etc/letsencrypt/live/gym.example.com:ro \
+            -v "$PWD/examples/nginx/opengym-mobile.conf.example:/etc/nginx/http.d/mobile.conf:ro" \
+            opengym-ha:test -t
       - name: Web and API startup smoke test
         run: |
           mkdir -p /tmp/opengym-smoke

@@ -1,0 +1,63 @@
+# openGym mobile API virtual host — EXAMPLE, not installed automatically.
+#
+# This config belongs on your SEPARATE HTTPS REVERSE PROXY, NOT in:
+#   - Home Assistant configuration.yaml;
+#   - your existing Home Assistant nginx server block;
+#   - the app's internal opengym/rootfs/etc/nginx/http.d/default.conf.
+#
+# Before using:
+#  1. Update the openGym Home Assistant wrapper to at least 1.4.3-7.
+#  2. On its Network tab, set container port 8100/tcp to host port 8100.
+#     This makes the HTTP API reachable on the Home Assistant host; keep
+#     it firewall-restricted to the proxy/private LAN or VPN.
+#  3. Set DNS for gym.example.com and provision a valid TLS certificate.
+#  4. Replace gym.example.com, certificate paths, and 192.0.2.10 below.
+#  5. Test with nginx -t, then reload the proxy.
+#
+# Never forward *unencrypted* TCP 8100 from the public internet.
+# Home Assistant authentication does not protect this mobile API:
+# the official app authenticates itself using openGym's own pairing token.
+#
+# Do not add SSO/Basic Auth/Cloudflare Access browser redirects, or
+# custom CORS/OPTIONS handling, to these /api/ endpoints.
+# The upstream openGym API handles CORS and bearer authentication itself.
+
+server {
+    listen 80;
+    server_name gym.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name gym.example.com;
+
+    # Use a trusted certificate for your real gym hostname.
+    ssl_certificate /etc/letsencrypt/live/gym.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/gym.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    # Exercise photos/videos may require bodies larger than nginx defaults.
+    client_max_body_size 48m;
+
+    # The dedicated mobile hostname must never serve the normal openGym UI.
+    location / {
+        return 404;
+    }
+
+    location ^~ /api/ {
+        # REPLACE 192.0.2.10 with your Home Assistant host's LAN IP.
+        # No trailing URI/slash: preserve /api/... and query parameters.
+        proxy_pass http://192.0.2.10:8100;
+        proxy_http_version 1.1;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 15s;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_request_buffering off;
+    }
+}

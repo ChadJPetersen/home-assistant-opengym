@@ -36,7 +36,9 @@ and connect it through a trusted **HTTPS reverse proxy** or **private VPN**.
 The separate API is *not* protected by Home Assistant login and must never be
 directly forwarded as plain HTTP to the internet.
 
-[Secure HTTPS setup, one-time phone pairing and Health Connect instructions](opengym/MOBILE_ACCESS.md).
+**Ready-to-edit nginx proxy configuration:** [examples/nginx/opengym-mobile.conf.example](examples/nginx/opengym-mobile.conf.example). Use a **separate HTTPS hostname** for the phone API, leaving your existing Home Assistant site on port `8123` unchanged.
+
+[Step-by-step nginx, NGINX Proxy Manager, one-time phone pairing and Health Connect instructions](opengym/MOBILE_ACCESS.md).
 
 ## Direct, bookmarkable URL
 

@@ -4,6 +4,14 @@ All notable changes to the **Home Assistant app wrapper** are recorded here, new
 
 Versions are `<openGym upstream version>-<Home Assistant wrapper revision>`. Revisions may contain application features, Home Assistant integration updates, or packaging fixes. Entries describe repository changes; production behavior still depends on Home Assistant and browser versions. Historical entries below summarize the commits made while the wrapper was first developed.
 
+## 1.4.3-8 — 2026-10-27
+
+### Changed
+- Improved the Home Assistant Network port description for the optional official-phone API to make its HTTP/HTTPS and authentication limitations explicit.
+- Added a ready-to-edit external nginx HTTPS virtual-host configuration, with step-by-step instructions to test and reload nginx safely.
+- Added NGINX Proxy Manager instructions, endpoint verification, and guidance for preserving the existing Home Assistant virtual host.
+- CI now validates the external nginx example syntax as well as the app's own nginx configuration.
+
 ## 1.4.3-7 — 2026-10-27
 
 ### Added
