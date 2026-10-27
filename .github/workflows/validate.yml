@@ -19,11 +19,16 @@ jobs:
           python3 tests/validate.py
       - name: Verify current app changelog
         run: python3 tests/check_release.py
-      - name: Require version bump and changelog for deployable PR changes
-        if: github.event_name == 'pull_request'
+      - name: Require version bump and release notes for deployed-app changes
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: python3 tests/check_release.py --base "$BASE_SHA"
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "Initial push: no previous commit to compare"
+          else
+            python3 tests/check_release.py --base "$BASE_SHA"
+          fi
       - name: Test workout sensor calculations
         run: node tests/sensors.cjs
       - name: Check shell syntax
