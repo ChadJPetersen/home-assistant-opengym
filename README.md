@@ -4,6 +4,11 @@ Self-host [openGym](https://github.com/DuarteSantos8/openGym) inside Home Assist
 
 > **Status:** Experimental. This is an independently maintained Home Assistant wrapper, not an official openGym or Home Assistant app.
 
+> **AI-assisted project:** The code, workflows, configuration, and documentation in this repository have been substantially written with AI assistance. AI-generated changes may contain mistakes, security issues, or incompatibilities even when automated tests pass. Review the source and validate it on your own Home Assistant installation before relying on it. This is an independent community wrapper, not an official openGym or Home Assistant product.
+
+
+**Release notes:** [openGym Home Assistant app changelog](opengym/CHANGELOG.md) · [Upstream openGym releases](https://github.com/DuarteSantos8/openGym/releases)
+
 ## Features
 
 - Home Assistant Ingress sidebar panel (automatic subpath routing, no dedicated hostname)
@@ -27,6 +32,9 @@ https://YOUR-HOME-ASSISTANT/hassio/ingress/YOUR_FULL_ADDON_SLUG
 This is an authenticated **Home Assistant page**, not a permanent public API URL. Do **not** bookmark `/api/hassio_ingress/<token>/`; that is a session-specific backend URL. No additional nginx entry, port mapping, `webui`, subpath rewrite or separate openGym hostname is necessary. Home Assistant login is still required, and openGym accounts remain separate.
 
 ## Force Home Assistant to check for an update
+
+Each deployable app update is documented in the [wrapper changelog](opengym/CHANGELOG.md). App-version changes and release notes are enforced by CI for pull requests.
+
 
 1. Make sure this repository has a higher `opengym/config.yaml` `version` than your installed release. Updates to `main` *without* a version increase will **not** cause Home Assistant to advertise a new app update.
 2. In Home Assistant open **Settings → Apps → App Store → ⋮ → Check for updates** (sometimes called **Reload**).
@@ -147,7 +155,7 @@ This is **best-effort**, not guaranteed. Ingress is embedded in an iframe; a cro
 
 ## Monthly Home Assistant compatibility agent
 
-A scheduled Codex agent reviews relevant Home Assistant **Supervisor, Core, and app developer documentation** on the **3rd of each month**. When it finds an actionable change, it edits a sandboxed checkout and **opens a pull request** for review; it never automatically merges or deploys. When nothing needs changing, it leaves the repo alone. The existing CI validates proposed changes.
+A scheduled Codex agent reviews relevant Home Assistant **Supervisor, Core, and app developer documentation** on the **3rd of each month**. When it finds an actionable change, it edits a sandboxed checkout and **opens a pull request** for review; it never automatically merges or deploys. When nothing needs changing, it leaves the repo alone. The existing CI validates proposed changes and requires an app version bump plus a changelog entry whenever deployment files change.
 
 **Required one-time setup:** In this repository open **Settings → Secrets and variables → Actions → New repository secret**, and create `OPENAI_API_KEY` with an OpenAI API platform key (this is not included with a ChatGPT subscription). Then, under **Settings → Actions → General**, permit GitHub Actions to create pull requests. Without the key the scheduled workflow skips AI edits; without PR permission the proposal job can succeed but opening the PR will fail. You can manually run it under **Actions → Monthly Home Assistant compatibility agent → Run workflow**. API use may incur charges. [Workflow definition](.github/workflows/monthly-home-assistant-agent.yml).
 
