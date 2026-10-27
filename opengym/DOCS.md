@@ -11,6 +11,30 @@ Configure `origin` to exactly the origin in your browser address bar when you us
 
 Do not specify the dynamic `/api/hassio_ingress/...` path. The app runs through Supervisor's ingress router. It does not expose port 8099 on the host.
 
+## Direct link and installation updates
+
+### Bookmark the openGym web UI
+
+When openGym runs as an Ingress app, Home Assistant supplies an authenticated, stable launcher route such as:
+
+```text
+https://YOUR-HOME-ASSISTANT/hassio/ingress/YOUR_FULL_ADDON_SLUG
+```
+
+The full slug is repository-specific and usually ends with `_opengym`. **Do not guess it**: open the installed app under **Settings → Apps → openGym → Open Web UI**, and copy the resulting frontend URL. The **Show in sidebar** switch can provide a second Home Assistant frontend link; it works too. These routes work from any Home Assistant address where your HA session is valid, but they cannot bypass HA authentication.
+
+**Important distinction:** `/hassio/ingress/<slug>` is a Home Assistant frontend *launcher*. The actual embedded app runs under `/api/hassio_ingress/<session-token>/`; this latter URL is not appropriate for persistent bookmarks, reverse-proxy rules or native app pairing. Your Ingress app does not require a separate nginx location, public port or hostname.
+
+### Force Home Assistant to recognize a new version
+
+1. Check the `version` in [config.yaml](config.yaml) is **higher** than the version currently installed in Home Assistant. Changing a GitHub file without increasing `version` does not cause an update offer.
+2. Open Home Assistant **Settings → Apps → App Store → ⋮ → Check for updates** (some releases call this **Reload**).
+3. Reopen installed **openGym** and choose **Update**. Allow the new image to finish installing and launch.
+4. If the app store knows the newer version but the update dialog still displays the installed version, refresh the browser and allow the Hass.io update integration time to synchronize.
+5. Back up openGym before significant updates. Avoid uninstalling or deleting app data as an update workaround.
+
+**Restart ≠ Update:** restarting a running app only restarts its installed container. Refreshing the repository checks GitHub metadata but does not automatically replace the installed app. The new container is installed through the app's **Update** action.
+
 ## Accounts and administration
 
 Password login is enabled by default, since WebAuthn/passkeys are unreliable inside an embedded iframe. Create the **first** openGym account yourself, immediately after starting the application. First-user admin is enabled; the first user becomes admin. Home Assistant's own sign-in does **not** automatically create or authenticate an openGym account. For added security you can disable guest mode (the default).
