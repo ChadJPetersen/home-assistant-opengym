@@ -1,5 +1,5 @@
 name: "openGym"
-version: "1.4.3-1"
+version: "1.4.3-2"
 slug: "opengym"
 description: "Self-hosted gym, workout tracking, and AI Coach via Home Assistant Ingress"
 url: "https://github.com/ChadJPetersen/home-assistant-opengym"
@@ -18,6 +18,9 @@ map:
   - type: data
     read_only: false
 backup: cold
+# Optional MQTT broker service for automatically discovered Home Assistant sensors.
+services:
+  - mqtt:want
 options:
   origin: "http://homeassistant.local:8123"
   password_login: true
@@ -27,6 +30,11 @@ options:
   media_quota_mb: 200
   media_uploads: true
   coach_disabled: false
+  home_assistant_sensors: false
+  ha_profile_id: ""
+  ha_include_bodyweight: false
+  ha_timezone: "UTC"
+  ha_poll_seconds: 120
 schema:
   origin: str
   password_login: bool
@@ -36,3 +44,8 @@ schema:
   media_quota_mb: int(0,10240)
   media_uploads: bool
   coach_disabled: bool
+  home_assistant_sensors: bool
+  ha_profile_id: str
+  ha_include_bodyweight: bool
+  ha_timezone: str
+  ha_poll_seconds: int(30,3600)
