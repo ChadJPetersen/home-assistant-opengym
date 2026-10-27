@@ -114,7 +114,8 @@ async function clearAll(client) {
     await publish(client,valueTopic(spec),'');
   }
   await publish(client,availability,'offline');
-  writeMarker(false);
+  try { fs.unlinkSync(MARKER); } catch(e) { if(e.code!=='ENOENT') throw e; }
+  registered=false;
   log('Removed retained sensor discoveries and states; publication disabled.');
 }
 function formatValue(spec,metrics) {
