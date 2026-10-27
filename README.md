@@ -14,6 +14,28 @@ Self-host [openGym](https://github.com/DuarteSantos8/openGym) inside Home Assist
 - First-account admin, configurable guest mode, session lifetime, upload quota and AI kill switch
 - Health checks, restricted Ingress listener, CI validation, build smoke test and upstream release monitoring
 
+## Direct, bookmarkable URL
+
+With Home Assistant **Ingress**, openGym has a stable **Home Assistant frontend launcher URL** (rather than an independently exposed web port):
+
+```text
+https://YOUR-HOME-ASSISTANT/hassio/ingress/YOUR_FULL_ADDON_SLUG
+```
+
+**Find your actual link:** Open **Settings → Apps → openGym → Open Web UI**, then copy and bookmark the browser URL. The full app slug is assigned by Home Assistant and usually ends in `_opengym` (the prefix is repository-specific). If the app's **Show in sidebar** setting is enabled, you can also open its sidebar entry and bookmark that address; Home Assistant may show a different, equivalent frontend route. You can bookmark either launcher or add it to your phone's home screen.
+
+This is an authenticated **Home Assistant page**, not a permanent public API URL. Do **not** bookmark `/api/hassio_ingress/<token>/`; that is a session-specific backend URL. No additional nginx entry, port mapping, `webui`, subpath rewrite or separate openGym hostname is necessary. Home Assistant login is still required, and openGym accounts remain separate.
+
+## Force Home Assistant to check for an update
+
+1. Make sure this repository has a higher `opengym/config.yaml` `version` than your installed release. Updates to `main` *without* a version increase will **not** cause Home Assistant to advertise a new app update.
+2. In Home Assistant open **Settings → Apps → App Store → ⋮ → Check for updates** (sometimes called **Reload**).
+3. Open the installed **openGym** app, choose **Update** when offered, and allow Home Assistant to install the newer app image.
+4. If Home Assistant still displays the old version, refresh the browser; a stale update entity may need a few minutes to synchronize with Supervisor.
+5. Before testing a major upgrade, make a Home Assistant **backup of openGym** so your account and workout history can be restored.
+
+A plain **Restart** restarts your already-installed image; it does **not** rebuild the app from current GitHub source. Deleting/reinstalling is unnecessary for routine version updates and could risk losing data if you remove the app's persistent storage.
+
 ## Install
 
 1. Home Assistant **Settings → Apps → App Store → ⋮ → Repositories**: add `https://github.com/ChadJPetersen/home-assistant-opengym`.
