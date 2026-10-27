@@ -59,12 +59,7 @@ configuration:
       Opt in to sharing workout summaries with Home Assistant via MQTT discovery.
       Requires an MQTT broker app and configured MQTT integration. No raw
       workout details are published. Off by default for privacy.
-  ha_profile_id:
-    name: "Profile ID for sensors"
-    description: >-
-      Leave blank to select the only openGym account automatically. If several
-      accounts exist, enter the account ID from openGym Settings > Account.
-      For privacy the app will not merge multiple people's workouts.
+  # Publishing is per active profile. MQTT device names include the openGym profile name.
   ha_include_bodyweight:
     name: "Publish body weight sensor"
     description: >-
