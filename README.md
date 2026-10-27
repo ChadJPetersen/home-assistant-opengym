@@ -33,7 +33,7 @@ This is an authenticated **Home Assistant page**, not a permanent public API URL
 
 ## Force Home Assistant to check for an update
 
-Each deployable app update is documented in the [wrapper changelog](opengym/CHANGELOG.md). App-version changes and release notes are enforced by CI for pull requests.
+Each deployable app update is documented in the [wrapper changelog](opengym/CHANGELOG.md). App-version changes and release notes are enforced by CI on pull requests and pushes.
 
 
 1. Make sure this repository has a higher `opengym/config.yaml` `version` than your installed release. Updates to `main` *without* a version increase will **not** cause Home Assistant to advertise a new app update.
