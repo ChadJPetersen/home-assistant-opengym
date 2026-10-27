@@ -5,7 +5,7 @@ ARG OPENGYM_VERSION=1.4.3
 FROM ghcr.io/duartesantos8/opengym-api:${OPENGYM_VERSION} AS api
 FROM ghcr.io/duartesantos8/opengym-web:${OPENGYM_VERSION} AS web
 FROM ${BUILD_FROM}
-RUN apk add --no-cache nginx tini curl \
+RUN apk add --no-cache nginx tini curl jq \
     && mkdir -p /run/nginx /data/opengym /usr/share/nginx/html \
     && adduser -D -H -s /sbin/nologin coach
 WORKDIR /app
