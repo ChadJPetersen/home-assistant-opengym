@@ -12,6 +12,7 @@ init: false
 timeout: 300
 ingress: true
 ingress_port: 8099
+ingress_stream: true  # stream large custom-exercise media uploads through Supervisor
 panel_icon: "mdi:dumbbell"
 panel_title: "openGym"
 map:
