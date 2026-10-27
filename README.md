@@ -24,6 +24,42 @@ Self-host [openGym](https://github.com/DuarteSantos8/openGym) inside Home Assist
 For full installation, troubleshooting and security considerations see [DOCS.md](opengym/DOCS.md).
 
 
+## Home Assistant workout sensors (optional)
+
+The app can publish **MQTT-discovered Home Assistant sensor entities** from your saved openGym workout history. Sensors are **off by default**: your personal training data is not automatically shared with Home Assistant.
+
+**Requires:** a working MQTT broker (for example, the Mosquitto Broker Home Assistant app) and the Home Assistant **MQTT integration** configured under **Settings → Devices & services**. Supervisor supplies broker connection details to openGym automatically: no MQTT passwords need to be entered in openGym options. This works entirely inside your local Home Assistant environment; it does not expose the openGym API.
+
+In the openGym app's Configuration tab, set:
+
+```yaml
+home_assistant_sensors: true
+ha_profile_id: ""           # blank = automatically select sole active account
+ha_include_bodyweight: false  # separate, sensitive-data opt-in
+ha_timezone: "America/Denver" # set to your actual IANA timezone
+ha_poll_seconds: 120
+```
+
+After saving and restarting the app, look for a new **openGym** device under **Settings → Devices & services → MQTT**, with these entities:
+
+| Entity | What it reports |
+| --- | --- |
+| Total workouts | Number of completed sessions in saved history |
+| Workouts (7 days) | Completed sessions during the most recent 7 local calendar days, including today |
+| Completed work sets (7 days) | Completed sets (warm-ups excluded); each per-side row counts once |
+| Workout completed today | Binary sensor: on when a completed session is logged for the current local date |
+| Last workout date | Latest completed workout's local date |
+| Days since last workout | Calendar days since the latest completed session |
+| Last workout duration | Minutes between the saved start/end timestamps, when available |
+| Saved routines | Number of stored routines |
+| Latest body weight | **Optional**; requires `ha_include_bodyweight: true` and a saved weight in kg or lb |
+
+The app reads **only one** openGym profile's workout-state file. With one account, leave `ha_profile_id` blank. With multiple accounts, enter **your own openGym Account ID** from **openGym → Settings → Account**; the publisher refuses to automatically aggregate multiple users. Exercise notes, account credentials, photo/media contents, individual exercise names, and raw sets are not published.
+
+**Privacy warning:** MQTT retains each sensor's last value, and Home Assistant Recorder may preserve historical values. Enable this only on a trusted Home Assistant instance with a trusted MQTT broker. Even workout counts can reveal activity patterns; body weight is deliberately off by default. Turning off `home_assistant_sensors` and restarting the app attempts to remove its retained MQTT discovery/state messages. Home Assistant's already-recorded history is **not deleted**. To remove historic data, use Home Assistant's Recorder/purge procedures separately.
+
+Without a broker, workout tracking and the AI Coach still work normally; the optional sensors simply don't become available. The bridge retries the broker and logs its connectivity status. For details and troubleshooting, see [Sensor documentation](opengym/DOCS.md#home-assistant-workout-sensors).
+
 ## nginx and reverse-proxy setup
 
 **For a normal Home Assistant app install, no nginx changes are needed.** This app uses Home Assistant **Ingress**: Supervisor serves openGym under Home Assistant's session-specific `/api/hassio_ingress/…/` path and routes it internally to nginx on port **8099**. You do **not** need to:
