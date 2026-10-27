@@ -15,6 +15,8 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check pyyaml
           python3 tests/validate.py
+      - name: Test workout sensor calculations
+        run: node tests/sensors.cjs
       - name: Check shell syntax
         run: sh -n opengym/rootfs/usr/local/bin/start-opengym
       - name: Build addon for amd64
@@ -26,7 +28,7 @@ jobs:
         run: |
           mkdir -p /tmp/opengym-smoke
           cat >/tmp/opengym-smoke/options.json <<'JSON'
-          {"origin":"http://localhost:8123","password_login":true,"allow_guest":false,"first_user_admin":true,"session_days":30,"media_quota_mb":200,"media_uploads":true,"coach_disabled":false}
+          {"origin":"http://localhost:8123","password_login":true,"allow_guest":false,"first_user_admin":true,"session_days":30,"media_quota_mb":200,"media_uploads":true,"coach_disabled":false,"home_assistant_sensors":false,"ha_profile_id":"","ha_include_bodyweight":false,"ha_timezone":"UTC","ha_poll_seconds":120}
           JSON
           docker run -d --name opengym-test -v /tmp/opengym-smoke:/data -p 127.0.0.1:18099:8099 opengym-ha:test
           trap 'docker logs opengym-test; docker rm -f opengym-test' EXIT
