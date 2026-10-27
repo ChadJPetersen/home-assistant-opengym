@@ -43,15 +43,10 @@ function summarize(state, opts = {}) {
     bodyweight_unit: unit
   };
 }
-function selectProfile(db, requested) {
-  const users = records(db.users).filter(u => typeof u.id === 'string' && /^[a-zA-Z0-9_-]+$/.test(u.id) && !u.disabled);
-  if (requested) {
-    const selected = users.find(u => u.id === requested);
-    if (!selected) throw new Error('Configured sensor profile ID not found or disabled');
-    return selected.id;
-  }
-  if (users.length === 1) return users[0].id;
-  if (users.length === 0) throw new Error('Create an openGym account to enable workout sensors');
-  throw new Error('Multiple openGym profiles exist: set ha_profile_id (find your ID in openGym Settings → Account)');
+function activeProfiles(db) {
+  return records(db.users).filter(u =>
+    typeof u.id === 'string' &&
+    /^[a-zA-Z0-9_-]+$/.test(u.id) && u.disabled !== true
+  );
 }
-module.exports = { summarize, selectProfile, daysBetween, localDate };
+module.exports = { summarize, activeProfiles, daysBetween, localDate };
