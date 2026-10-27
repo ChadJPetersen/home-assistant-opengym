@@ -1,0 +1,54 @@
+# Human-friendly labels and inline help in Home Assistant's Configuration tab.
+# Option keys must match opengym/config.yaml -> schema.
+configuration:
+  origin:
+    name: "Home Assistant URL (origin)"
+    description: >-
+      The exact web address you use to open Home Assistant, including http://
+      or https:// and any port, but no trailing slash or page path.
+      Example: https://ha.example.com or http://homeassistant.local:8123.
+      Used by openGym to validate requests. It is not the app's Ingress URL
+      or an AI model endpoint. Use one consistent Home Assistant address.
+  password_login:
+    name: "Allow password sign-in"
+    description: >-
+      Enable openGym's username/password authentication. Recommended for
+      Home Assistant Ingress because passkeys may not work inside its iframe.
+      Disabling can lock you out unless another sign-in method works.
+  allow_guest:
+    name: "Allow guest mode"
+    description: >-
+      Show 'Continue without account'. Guest workouts are kept in that
+      browser rather than synced to your server. Leave off to require
+      an openGym account for persistent, multi-device workout data.
+  first_user_admin:
+    name: "Make first openGym user an admin"
+    description: >-
+      On an empty openGym server, give the first newly registered profile
+      administrator access, including AI Coach configuration and user tools.
+      Register your own account first. This does not promote existing users.
+  session_days:
+    name: "Login session length (days)"
+    description: >-
+      How long newly issued openGym sign-in sessions remain valid.
+      Default 30 days; range 1–365. Changing this does not shorten
+      sessions that were already issued.
+  media_quota_mb:
+    name: "Media storage quota per user (MB)"
+    description: >-
+      Maximum space each openGym profile can use for uploaded custom-exercise
+      photos and videos. Default 200 MB; 0 disables the quota (unlimited).
+      Not a limit on your full workout history or Home Assistant storage.
+  media_uploads:
+    name: "Allow exercise media uploads"
+    description: >-
+      Allow users to upload photos and videos for custom exercises.
+      Disable to prevent new media uploads and reduce storage use.
+      Existing uploaded media is not automatically deleted.
+  coach_disabled:
+    name: "Disable AI Coach (kill switch)"
+    description: >-
+      When enabled, block the openGym AI Coach even if an administrator
+      configured a provider. Leave off to permit it; an openGym admin
+      must still enable the Coach and set up their OpenAI, Gemini,
+      Anthropic or compatible provider credentials.
