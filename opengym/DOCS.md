@@ -17,14 +17,14 @@ Password login is enabled by default, since WebAuthn/passkeys are unreliable ins
 
 ## Home Assistant workout sensors
 
-The integration can publish automatically discovered **MQTT sensors**, but publishing is **disabled by default** for privacy. This feature reads the selected user's local `/data/opengym/state-<account-id>.json` file and publishes only summary numbers, never raw exercise details or credentials.
+The integration can publish automatically discovered **MQTT sensors**, but publishing is **disabled by default** for privacy. This feature independently reads every active account’s `/data/opengym/state-<account-id>.json` and publishes separate summaries for each profile, never raw exercise details or credentials.
 
 ### Required setup
 
 1. Install a MQTT broker, typically the **Mosquitto Broker** Home Assistant app.
 2. Set up the **MQTT integration** in Home Assistant under **Settings → Devices & services**, and leave MQTT discovery enabled.
 3. In the openGym app's Configuration tab, turn on `home_assistant_sensors`.
-4. If there is more than one openGym account, set `ha_profile_id` to your **openGym account ID** (find it under openGym **Settings → Account**). Blank chooses the sole active account.
+4. The publisher creates **one MQTT device for each active openGym profile**, named `openGym · <profile name>`. This requires consent from everyone who uses the installation; profile names will be visible in Home Assistant.
 5. Set `ha_timezone` to your local IANA timezone (such as `America/Denver` or `Europe/London`).
 6. Save, restart openGym, and look for the **openGym** device in **Settings → Devices & services → MQTT**.
 
@@ -35,7 +35,6 @@ The app receives broker credentials automatically through Home Assistant Supervi
 | Option | Default | Description |
 | --- | --- | --- |
 | `home_assistant_sensors` | `false` | Master opt-in to publish Home Assistant entities over MQTT. |
-| `ha_profile_id` | empty | User ID to share. Blank auto-selects only if exactly one active openGym account exists. |
 | `ha_include_bodyweight` | `false` | Additional privacy opt-in for the latest logged body weight. Requires kg/lb recorded in the profile. |
 | `ha_timezone` | `UTC` | IANA timezone used to calculate today, days since last workout, and rolling seven-day calendar window. |
 | `ha_poll_seconds` | `120` | Refresh frequency (30–3600 seconds). It does not alter openGym's own synchronization. |
@@ -54,7 +53,7 @@ The app receives broker credentials automatically through Home Assistant Supervi
 | Saved routines | Count of routines in the saved profile |
 | Latest body weight | Only created with `ha_include_bodyweight: true` and valid units |
 
-These are **summary/activity** metrics, not medical measurements or proof that a planned workout happened. If there is no valid profile or its state cannot be read, the device is marked unavailable instead of publishing invented zeros.
+These are **summary/activity** metrics, not medical measurements or proof that a planned workout happened. An unreadable profile is marked unavailable without stopping the other profiles. Deleted or disabled accounts have their MQTT discovery topics cleaned up.
 
 ### Example Home Assistant automation
 
@@ -71,7 +70,7 @@ If MQTT is down when sensors are disabled, cleanup is delayed until the broker r
 ### Troubleshooting
 
 - **No sensors appear:** confirm Mosquitto (or another Supervisor-discoverable broker) is running and the **MQTT integration** is configured, that the publishing option is true, and inspect openGym app logs for `[HA sensors]`.
-- **Account ID error:** with multiple active accounts, set `ha_profile_id` explicitly to the ID of the account whose history you want in Home Assistant.
+- **Account ID error:** with multiple active accounts, check that the profile exists, is enabled, and has synced its first workout.
 - **Workout counts are wrong by one near midnight:** verify `ha_timezone` matches your training calendar's IANA timezone.
 - **Body weight missing:** it is off by default, requires at least one logged weigh-in and kg/lb units, and is removed from MQTT discovery when disabled.
 - **Numbers aren't instant:** publication occurs every `ha_poll_seconds` after openGym has synced the saved profile to its server.
@@ -154,3 +153,24 @@ For **Home Assistant behind a traditional reverse proxy**, Home Assistant may al
 - **Origin mismatch / inability to save:** set `origin` to the exact Home Assistant site origin you used to open the app, with no path/trailing slash, and restart.
 - **Standalone mobile app can't pair:** the mobile app can't reuse Home Assistant's session-specific Ingress URL; a separate stable and secured endpoint is required.
 
+
+## Passkeys and HTTPS
+
+The upstream openGym API already supports WebAuthn/passkey login. This app now adds a same-origin `Permissions-Policy` response header for `publickey-credentials-create` and `publickey-credentials-get` when Home Assistant embeds openGym. It does **not** bypass the browser's iframe security restrictions.
+
+To try passkeys:
+
+1. Access **Home Assistant itself** over a consistent valid HTTPS hostname, such as `https://ha.example.com` (Home Assistant Cloud or your existing HTTPS reverse proxy also qualify).
+2. Set the app's `origin` option to that **exact** HTTPS origin, without any path or trailing slash, and restart the app.
+3. In a modern browser on that same hostname, open the openGym Ingress page and try registering a passkey. Passkeys are bound to the hostname; changing hostnames later can invalidate them.
+4. Test **signing in with the passkey** before ever disabling `password_login`. Keep passwords available as a reliable fallback.
+
+Browsers generally require HTTPS for WebAuthn (with localhost as a development exception), and the parent Home Assistant frame must allow credential creation and use. Same-origin frames generally have fewer restrictions, but cross-origin framing and some embedded mobile browser contexts may reject WebAuthn even with headers. A child's `Permissions-Policy` cannot override a restriction imposed by the parent. Neither a special openGym hostname nor a second nginx proxy route is required for this attempt.
+
+If registration fails with `NotAllowedError`, inspect the browser developer console for Permissions Policy or iframe restrictions, verify the HTTPS hostname matches `origin`, and use password login rather than weakening authentication or exposing the internal API port. Passkeys have **not** been browser-tested against Home Assistant Ingress by this repository.
+
+## Monthly Home Assistant feature updates
+
+A scheduled `openai/codex-action` workflow runs on the **3rd day of each month**, examining current official Home Assistant app/Supervisor/Core changes. It proposes source changes only if relevant, runs local validation, and opens a **pull request for manual approval**. It never merges or installs app updates by itself.
+
+To activate it, add repository Actions secret `OPENAI_API_KEY` (OpenAI Platform API key; ChatGPT subscription access does not grant API usage) and enable **Actions → General → Allow GitHub Actions to create and approve pull requests** in repository settings. Without the secret, the workflow safely skips the coding step. It can be started manually from GitHub Actions. AI calls may be billed separately. The research notes are untrusted reference data, and the agent is restricted to a sandbox and approved file paths.
