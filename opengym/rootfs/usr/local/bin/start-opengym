@@ -1,0 +1,49 @@
+#!/bin/sh
+set -eu
+OPTIONS=/data/options.json
+if [ ! -r "$OPTIONS" ]; then
+  echo "Missing Home Assistant app options: $OPTIONS" >&2
+  exit 1
+fi
+# jq is installed by the app; never eval user configuration.
+option() { jq -r --arg key "$1" '.[$key]' "$OPTIONS"; }
+boolean() { [ "$(option "$1")" = "true" ] && printf '1' || printf '0'; }
+origin="$(option origin)"
+case "$origin" in
+  http://*|https://*) ;;
+  *) echo "origin must be an absolute http(s) origin" >&2; exit 1 ;;
+esac
+# Reject paths, fragments, query strings and trailing slash.
+node -e 'const u=new URL(process.argv[1]);if(!["http:","https:"].includes(u.protocol)||u.origin!==process.argv[1])process.exit(1)' "$origin" || {
+  echo "origin must be exactly scheme://host[:port], without a path or trailing slash" >&2
+  exit 1
+}
+export ORIGIN="$origin"
+export RP_ID="$(node -e 'process.stdout.write(new URL(process.argv[1]).hostname)' "$origin")"
+export RP_NAME="openGym"
+export PORT=3000
+export DATA_DIR=/data/opengym
+export NODE_ENV=production
+export TRUST_PROXY=0
+export PASSWORD_LOGIN="$(boolean password_login)"
+export ALLOW_GUEST="$(boolean allow_guest)"
+export FIRST_USER_ADMIN="$(boolean first_user_admin)"
+export SESSION_DAYS="$(option session_days)"
+export MEDIA_QUOTA_MB="$(option media_quota_mb)"
+export MEDIA_UPLOADS="$(boolean media_uploads)"
+export COACH_DISABLED="$(boolean coach_disabled)"
+mkdir -p "$DATA_DIR"
+echo "Starting openGym API (origin=$ORIGIN)"
+node /app/server.js &
+api_pid=$!
+nginx -g 'daemon off;' &
+nginx_pid=$!
+stop() { kill "$api_pid" "$nginx_pid" 2>/dev/null || true; wait || true; }
+trap stop TERM INT
+while kill -0 "$api_pid" 2>/dev/null && kill -0 "$nginx_pid" 2>/dev/null; do
+  sleep 2 &
+  wait $! || true
+done
+echo "openGym API or nginx stopped unexpectedly" >&2
+stop
+exit 1
