@@ -1,5 +1,5 @@
 name: "openGym"
-version: "1.4.3-2"
+version: "1.4.3-3"
 slug: "opengym"
 description: "Self-hosted gym, workout tracking, and AI Coach via Home Assistant Ingress"
 url: "https://github.com/ChadJPetersen/home-assistant-opengym"
@@ -31,7 +31,6 @@ options:
   media_uploads: true
   coach_disabled: false
   home_assistant_sensors: false
-  ha_profile_id: ""
   ha_include_bodyweight: false
   ha_timezone: "UTC"
   ha_poll_seconds: 120
@@ -45,7 +44,6 @@ schema:
   media_uploads: bool
   coach_disabled: bool
   home_assistant_sensors: bool
-  ha_profile_id: str
   ha_include_bodyweight: bool
   ha_timezone: str
   ha_poll_seconds: int(30,3600)
