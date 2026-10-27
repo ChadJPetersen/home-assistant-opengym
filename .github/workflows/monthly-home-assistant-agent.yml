@@ -57,6 +57,7 @@ jobs:
         run: |
           python3 -m pip install -q pyyaml
           python3 tests/validate.py
+          python3 tests/check_release.py
           node tests/sensors.cjs
           sh -n opengym/rootfs/usr/local/bin/start-opengym
       - name: Export non-empty approved patch
@@ -106,3 +107,4 @@ jobs:
             Monthly Codex review of official Home Assistant releases and app documentation.
             Proposed changes need human approval and must pass existing repository CI.
             Nothing is changed when the agent finds no relevant improvement.
+            Deployed app changes must bump the version and add an entry in opengym/CHANGELOG.md.
