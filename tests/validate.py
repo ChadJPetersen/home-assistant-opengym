@@ -22,6 +22,11 @@ assert {'amd64','aarch64'} <= set(config['arch'])
 assert set(config['options']) == set(config['schema'])
 assert 'data' in [x['type'] for x in config['map']]
 assert config['backup'] == 'cold'
+assert 'mqtt:want' in config.get('services', [])
+assert config['options']['home_assistant_sensors'] is False
+assert config['options']['ha_include_bodyweight'] is False
+assert 'home_assistant_sensors' in config['schema']
+assert (addon/'rootfs/usr/local/lib/opengym-ha/bridge.cjs').exists()
 upstream = build['args']['OPENGYM_VERSION']
 assert config['version'].startswith(upstream + '-')
 assert f'OPENGYM_VERSION={upstream}' in docker
