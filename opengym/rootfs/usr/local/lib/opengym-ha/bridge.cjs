@@ -92,8 +92,7 @@ function config(spec,weightUnit) {
       name:'openGym',
       manufacturer:'openGym',
       model:'Home Assistant App'
-    },
-    origin:{name:'openGym Home Assistant App',sw_version:'1.4.3'}
+    }
   };
   if(spec.binary){cfg.payload_on='ON';cfg.payload_off='OFF';}
   else {
