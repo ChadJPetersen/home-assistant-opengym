@@ -15,6 +15,68 @@ Do not specify the dynamic `/api/hassio_ingress/...` path. The app runs through 
 
 Password login is enabled by default, since WebAuthn/passkeys are unreliable inside an embedded iframe. Create the **first** openGym account yourself, immediately after starting the application. First-user admin is enabled; the first user becomes admin. Home Assistant's own sign-in does **not** automatically create or authenticate an openGym account. For added security you can disable guest mode (the default).
 
+## Home Assistant workout sensors
+
+The integration can publish automatically discovered **MQTT sensors**, but publishing is **disabled by default** for privacy. This feature reads the selected user's local `/data/opengym/state-<account-id>.json` file and publishes only summary numbers, never raw exercise details or credentials.
+
+### Required setup
+
+1. Install a MQTT broker, typically the **Mosquitto Broker** Home Assistant app.
+2. Set up the **MQTT integration** in Home Assistant under **Settings → Devices & services**, and leave MQTT discovery enabled.
+3. In the openGym app's Configuration tab, turn on `home_assistant_sensors`.
+4. If there is more than one openGym account, set `ha_profile_id` to your **openGym account ID** (find it under openGym **Settings → Account**). Blank chooses the sole active account.
+5. Set `ha_timezone` to your local IANA timezone (such as `America/Denver` or `Europe/London`).
+6. Save, restart openGym, and look for the **openGym** device in **Settings → Devices & services → MQTT**.
+
+The app receives broker credentials automatically through Home Assistant Supervisor's optional MQTT service discovery. You do not need to open any extra HTTP ports or modify your nginx proxy. The app runs normally without an MQTT broker; these optional sensors remain unavailable.
+
+### Sensor settings
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `home_assistant_sensors` | `false` | Master opt-in to publish Home Assistant entities over MQTT. |
+| `ha_profile_id` | empty | User ID to share. Blank auto-selects only if exactly one active openGym account exists. |
+| `ha_include_bodyweight` | `false` | Additional privacy opt-in for the latest logged body weight. Requires kg/lb recorded in the profile. |
+| `ha_timezone` | `UTC` | IANA timezone used to calculate today, days since last workout, and rolling seven-day calendar window. |
+| `ha_poll_seconds` | `120` | Refresh frequency (30–3600 seconds). It does not alter openGym's own synchronization. |
+
+### Entities
+
+| Home Assistant entity | Notes |
+| --- | --- |
+| Total workouts | All saved completed sessions up to the current date |
+| Workouts (7 days) | Sessions in the last seven local dates (including today) |
+| Completed work sets (7 days) | Only sets marked complete, excluding warm-ups, counting per-side sets as one row |
+| Workout completed today | Binary sensor based on local calendar date |
+| Last workout date | ISO `YYYY-MM-DD` when data exists |
+| Days since last workout | Local calendar days, not exact elapsed hours |
+| Last workout duration | Based on saved start/end time; unavailable if missing or implausible |
+| Saved routines | Count of routines in the saved profile |
+| Latest body weight | Only created with `ha_include_bodyweight: true` and valid units |
+
+These are **summary/activity** metrics, not medical measurements or proof that a planned workout happened. If there is no valid profile or its state cannot be read, the device is marked unavailable instead of publishing invented zeros.
+
+### Example Home Assistant automation
+
+Once your MQTT device is discovered, you can create an automation such as **“Switch on gym-prep lighting when today's workout becomes complete”** using the **Workout completed today** binary sensor. Discover the entity ID in Home Assistant first; it may differ depending on other integrations and devices.
+
+### Privacy, retention and disabling
+
+Publishing uses retained MQTT discovery/state topics so entities can recover after Home Assistant restarts. The bridge uses a persistent installation identifier; IDs remain stable through an app update. It does **not** send names, email addresses, credentials, per-set loads, photos, or exercise notes.
+
+Home Assistant's Recorder can retain workout sensor history. Body weight is separately opt-in because it is more personal. When you turn off `home_assistant_sensors` and restart the app, the bridge attempts to clear its retained MQTT topics. **This does not remove Home Assistant Recorder history**. To delete previously stored history you must manage Recorder retention/purging separately.
+
+If MQTT is down when sensors are disabled, cleanup is delayed until the broker returns. Do not assume that turning off a setting immediately erases messages from a disconnected broker.
+
+### Troubleshooting
+
+- **No sensors appear:** confirm Mosquitto (or another Supervisor-discoverable broker) is running and the **MQTT integration** is configured, that the publishing option is true, and inspect openGym app logs for `[HA sensors]`.
+- **Account ID error:** with multiple active accounts, set `ha_profile_id` explicitly to the ID of the account whose history you want in Home Assistant.
+- **Workout counts are wrong by one near midnight:** verify `ha_timezone` matches your training calendar's IANA timezone.
+- **Body weight missing:** it is off by default, requires at least one logged weigh-in and kg/lb units, and is removed from MQTT discovery when disabled.
+- **Numbers aren't instant:** publication occurs every `ha_poll_seconds` after openGym has synced the saved profile to its server.
+- **Old entities after turning sensors off:** restart the app while the broker is online so retained discovery configuration can be cleaned up; Recorder history requires separate deletion.
+
 ## AI Coach
 
 The bundled default API image supports standard API-based model providers (OpenAI, Anthropic, Gemini, OpenAI-compatible / Ollama). Enable it from **Settings → Account → Admin dashboard → AI Coach** after making your account. Extra native agent runtimes (Codex CLI and Claude Agent SDK) are not bundled; those require the upstream coach build target.
