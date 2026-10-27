@@ -36,7 +36,19 @@ and connect it through a trusted **HTTPS reverse proxy** or **private VPN**.
 The separate API is *not* protected by Home Assistant login and must never be
 directly forwarded as plain HTTP to the internet.
 
-**Ready-to-edit nginx proxy configuration:** [examples/nginx/opengym-mobile.conf.example](examples/nginx/opengym-mobile.conf.example). Use a **separate HTTPS hostname** for the phone API, leaving your existing Home Assistant site on port `8123` unchanged.
+**Using the Home Assistant NGINX SSL proxy app (the same proxy as OrcaSlicer)?**
+You can use a simple **`/opengym` path** on your existing Home Assistant
+HTTPS domain. It directly reaches the openGym app on Home Assistant's private
+Supervisor network and **does not need port 8100 published to the host**.
+Copy [`nginx_proxy_default_opengym.conf`](examples/nginx/home-assistant-ssl-proxy/nginx_proxy_default_opengym.conf)
+to `/share/nginx_proxy_default_opengym.conf` in Home Assistant, leave
+`customize.default: nginx_proxy_default*.conf` enabled, and restart the
+NGINX SSL proxy app. Use `https://YOUR_HA_DOMAIN/opengym` as the phone
+app's server URL. See the [dedicated Home Assistant nginx instructions](docs/HOME_ASSISTANT_NGINX_SSL_PROXY.md).
+
+**If you instead use a separate Linux/nginx or NGINX Proxy Manager deployment:**
+[external nginx HTTPS vhost example](examples/nginx/opengym-mobile.conf.example)
+and [separate-hostname setup guide](opengym/MOBILE_ACCESS.md).
 
 [Step-by-step nginx, NGINX Proxy Manager, one-time phone pairing and Health Connect instructions](opengym/MOBILE_ACCESS.md).
 

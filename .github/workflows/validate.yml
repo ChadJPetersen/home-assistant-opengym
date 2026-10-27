@@ -55,13 +55,37 @@ jobs:
             -v /tmp/opengym-mobile-cert:/etc/letsencrypt/live/gym.example.com:ro \
             -v "$PWD/examples/nginx/opengym-mobile.conf.example:/etc/nginx/http.d/mobile.conf:ro" \
             opengym-ha:test -t
+      - name: Validate Home Assistant NGINX SSL proxy path snippet
+        run: |
+          # The NGINX SSL proxy app inserts these locations INSIDE its
+          # existing HTTPS server. CI substitutes 127.0.0.1 for the
+          # Supervisor-only DNS name to exercise nginx syntax and mapping.
+          mkdir -p /tmp/ha-path-proxy
+          sed 's/3fa96add-opengym/127.0.0.1/g' \
+            examples/nginx/home-assistant-ssl-proxy/nginx_proxy_default_opengym.conf \
+            >/tmp/ha-path-proxy/opengym.conf
+          cat >/tmp/ha-path-proxy/default.conf <<'NGINX'
+          server {
+              listen 8110;
+              server_name _;
+              include /etc/nginx/ha-opengym.conf;
+              location / { return 200 "existing Home Assistant route"; }
+          }
+          NGINX
+          docker run --rm --entrypoint nginx \
+            -v /tmp/ha-path-proxy/default.conf:/etc/nginx/http.d/ha-proxy.conf:ro \
+            -v /tmp/ha-path-proxy/opengym.conf:/etc/nginx/ha-opengym.conf:ro \
+            opengym-ha:test -t
       - name: Web and API startup smoke test
         run: |
           mkdir -p /tmp/opengym-smoke
           cat >/tmp/opengym-smoke/options.json <<'JSON'
           {"origin":"http://localhost:8123","password_login":true,"allow_guest":false,"first_user_admin":true,"session_days":30,"media_quota_mb":200,"media_uploads":true,"coach_disabled":false,"home_assistant_sensors":false,"ha_include_bodyweight":false,"ha_timezone":"UTC","ha_poll_seconds":120}
           JSON
-          docker run -d --name opengym-test -v /tmp/opengym-smoke:/data -p 127.0.0.1:18099:8099 -p 127.0.0.1:18100:8100 opengym-ha:test
+          docker run -d --name opengym-test -v /tmp/opengym-smoke:/data -p 127.0.0.1:18099:8099 -p 127.0.0.1:18100:8100 -p 127.0.0.1:18110:8110 \
+            -v /tmp/ha-path-proxy/default.conf:/etc/nginx/http.d/ha-proxy.conf:ro \
+            -v /tmp/ha-path-proxy/opengym.conf:/etc/nginx/ha-opengym.conf:ro \
+            opengym-ha:test
           trap 'docker logs opengym-test; docker rm -f opengym-test' EXIT
           for n in $(seq 1 45); do
             if curl -fsS http://127.0.0.1:18099/api/health > /tmp/health.json; then break; fi
@@ -81,3 +105,13 @@ jobs:
             -H 'Access-Control-Request-Headers: content-type,authorization' \
             http://127.0.0.1:18100/api/pair/redeem
           grep -qi '^access-control-allow-origin: https://localhost' /tmp/mobile-cors.hdr
+          # Simulate the app-to-app Home Assistant nginx /opengym routing.
+          curl -fsS http://127.0.0.1:18110/opengym/api/health >/dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18110/opengym/)" = "404"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18110/)" = "200"
+          curl -fsS -X OPTIONS -D /tmp/ha-path-cors.hdr -o /dev/null \
+            -H 'Origin: https://localhost' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: content-type,authorization' \
+            http://127.0.0.1:18110/opengym/api/pair/redeem
+          grep -qi '^access-control-allow-origin: https://localhost' /tmp/ha-path-cors.hdr

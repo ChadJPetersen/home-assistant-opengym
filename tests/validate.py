@@ -24,6 +24,11 @@ example = (root / 'examples/nginx/opengym-mobile.conf.example').read_text()
 assert 'proxy_pass http://192.0.2.10:8100;' in example
 assert 'ssl_certificate ' in example and 'location ^~ /api/' in example
 assert 'add_header Access-Control-Allow-Origin' not in example, 'Upstream owns CORS'
+ha_snippet = (root / 'examples/nginx/home-assistant-ssl-proxy/nginx_proxy_default_opengym.conf').read_text()
+assert 'location ^~ /opengym/api/' in ha_snippet
+assert 'proxy_pass http://3fa96add-opengym:8100/api/;' in ha_snippet
+assert 'server {' not in ha_snippet.split('# Do not let non-API paths', 1)[1], 'A HA default-server include cannot have a server block'
+assert 'add_header Access-Control-Allow-Origin' not in ha_snippet, 'Upstream owns CORS'
 assert {'amd64','aarch64'} <= set(config['arch'])
 assert set(config['options']) == set(config['schema'])
 assert 'data' in [x['type'] for x in config['map']]
