@@ -1,0 +1,108 @@
+name: Monthly Home Assistant compatibility agent
+on:
+  schedule:
+    - cron: "37 10 3 * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: monthly-ha-compatibility
+  cancel-in-progress: false
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    outputs:
+      has_patch: ${{ steps.diff.outputs.has_patch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check API key configured
+        id: key
+        env:
+          PRESENT: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: echo "present=$PRESENT" >> "$GITHUB_OUTPUT"
+      - name: Read official Home Assistant releases and app-doc updates
+        if: steps.key.outputs.present == 'true'
+        run: |
+          python3 - <<'PY'
+          import json,datetime,urllib.request
+          since=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=55)).isoformat(timespec='seconds').replace('+00:00','Z')
+          urls={
+            'supervisor':'https://api.github.com/repos/home-assistant/supervisor/releases?per_page=5',
+            'core':'https://api.github.com/repos/home-assistant/core/releases?per_page=4',
+            'app_docs':'https://api.github.com/repos/home-assistant/developers.home-assistant/commits?path=docs/apps&since='+since+'&per_page=25'
+          }
+          result={}
+          for key,url in urls.items():
+            try:
+              req=urllib.request.Request(url,headers={'Accept':'application/vnd.github+json','User-Agent':'ha-compat-agent'})
+              data=json.load(urllib.request.urlopen(req,timeout=20))
+              if key=='app_docs':
+                result[key]=[{'message':c['commit']['message'][:300],'url':c['html_url']} for c in data]
+              else:
+                result[key]=[{'tag':c['tag_name'],'url':c['html_url'],'notes':(c.get('body') or '')[:4000]} for c in data]
+            except Exception as e: result[key]={'error':str(e)}
+          open('.ha-compatibility-research.json','w').write(json.dumps(result,indent=2))
+          PY
+      - name: Propose only relevant compatibility changes
+        if: steps.key.outputs.present == 'true'
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ":workspace"
+          prompt-file: .github/prompts/monthly-ha-compatibility.md
+      - name: Validate proposed edits
+        if: steps.key.outputs.present == 'true'
+        run: |
+          python3 -m pip install -q pyyaml
+          python3 tests/validate.py
+          node tests/sensors.cjs
+          sh -n opengym/rootfs/usr/local/bin/start-opengym
+      - name: Export non-empty approved patch
+        if: steps.key.outputs.present == 'true'
+        id: diff
+        run: |
+          git add -N opengym README.md tests repository.yaml || true
+          git diff --binary -- opengym README.md tests repository.yaml > /tmp/ha-update.patch
+          test -s /tmp/ha-update.patch && echo "has_patch=true" >> "$GITHUB_OUTPUT" || echo "has_patch=false" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: steps.diff.outputs.has_patch == 'true'
+        with:
+          name: compatibility-patch
+          path: /tmp/ha-update.patch
+  open_pr:
+    needs: propose
+    if: needs.propose.outputs.has_patch == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: compatibility-patch
+      - name: Check patch file boundaries and apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check ha-update.patch
+          git apply ha-update.patch
+          while IFS= read -r name; do
+            case "$name" in
+              opengym/*|tests/*|README.md|repository.yaml) ;;
+              *) echo "Blocked change to $name"; exit 1;;
+            esac
+          done < <(git diff --name-only)
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ github.token }}
+          branch: bot/monthly-home-assistant-compatibility
+          delete-branch: true
+          commit-message: "chore: propose Home Assistant compatibility updates"
+          title: "Monthly Home Assistant compatibility improvements"
+          body: |
+            Monthly Codex review of official Home Assistant releases and app documentation.
+            Proposed changes need human approval and must pass existing repository CI.
+            Nothing is changed when the agent finds no relevant improvement.
