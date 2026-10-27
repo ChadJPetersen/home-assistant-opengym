@@ -34,11 +34,21 @@ export MEDIA_UPLOADS="$(boolean media_uploads)"
 export COACH_DISABLED="$(boolean coach_disabled)"
 mkdir -p "$DATA_DIR"
 echo "Starting openGym API (origin=$ORIGIN)"
+# The bridge reads only aggregates from one profile's state file.
+# It never needs a public openGym API endpoint or access to HA administrator APIs.
+# When sensor publishing has been turned off, run once to clean up retained
+# discovery topics from the MQTT broker (if previously registered).
+export OPENGYM_DATA_DIR="$DATA_DIR"
+bridge_pid=""
+if [ "$(option home_assistant_sensors)" = "true" ] || [ -f "$DATA_DIR/.ha-mqtt-bridge.json" ]; then
+  node /usr/local/lib/opengym-ha/bridge.cjs &
+  bridge_pid=$!
+fi
 node /app/server.js &
 api_pid=$!
 nginx -g 'daemon off;' &
 nginx_pid=$!
-stop() { kill "$api_pid" "$nginx_pid" 2>/dev/null || true; wait || true; }
+stop() { kill "$api_pid" "$nginx_pid" ${bridge_pid:-} 2>/dev/null || true; wait || true; }
 trap stop TERM INT
 while kill -0 "$api_pid" 2>/dev/null && kill -0 "$nginx_pid" 2>/dev/null; do
   sleep 2 &
