@@ -32,6 +32,8 @@ jobs:
           fi
       - name: Test workout sensor calculations
         run: node tests/sensors.cjs
+      - name: Test read-only Muse MCP connector prototype
+        run: node integrations/muse/server.test.mjs
       - name: Check shell syntax
         run: sh -n opengym/rootfs/usr/local/bin/start-opengym
       - name: Build addon for amd64
