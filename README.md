@@ -9,6 +9,14 @@ Self-host [openGym](https://github.com/DuarteSantos8/openGym) inside Home Assist
 
 **Release notes:** [openGym Home Assistant app changelog](opengym/CHANGELOG.md) · [Upstream openGym releases](https://github.com/DuarteSantos8/openGym/releases)
 
+## Garmin fēnix 5S watch integration (experimental)
+
+This wrapper now pins **upstream openGym 1.4.4**, which includes the authenticated watch-relay endpoints. The separate [openGym Remote for Garmin project](https://github.com/ChadJPetersen/opengym-garmin) can use those endpoints directly to submit actual workout set-completion events—without a demo service, a new exposed port, or credentials for Home Assistant.
+
+To pair, first back up and update this Home Assistant app, then connect the official Android openGym app to your self-hosted server. In signed-in openGym go to **Settings → Zepp OS watch → Pair a watch** and enter that one-time code in the Garmin Connect IQ app settings together with your existing HTTPS OpenGym mobile URL (`https://YOUR_HA_DOMAIN/opengym`). The watch uses OpenGym's generic watch mailbox; it is not a Zepp device. With the phone locked, queued events may not be applied until openGym is foregrounded again.
+
+The Garmin watch application is experimental and has **not yet been compiled or tested on the original fēnix 5S**. See its [README](https://github.com/ChadJPetersen/opengym-garmin/blob/main/README.md) before sideloading.
+
 ## Features
 
 - Home Assistant Ingress sidebar panel (automatic subpath routing, no dedicated hostname)

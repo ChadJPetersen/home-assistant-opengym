@@ -28,7 +28,7 @@ feature is opt-in and experimental.
 ## Step 1: Update and back up
 
 1. Back up openGym through Home Assistant before changing access settings.
-2. Update to `1.4.3-8` using **Settings → Apps → App Store → ⋮ →
+2. Update to `1.4.4-0` using **Settings → Apps → App Store → ⋮ →
    Check for updates**, then **Update** on the openGym app page.
 3. Verify the normal Home Assistant Ingress interface still works.
 4. Leave `origin` configured as your exact **Home Assistant web address**,

@@ -1,5 +1,5 @@
 name: "openGym"
-version: "1.4.3-8"
+version: "1.4.4-0"
 slug: "opengym"
 description: "Self-hosted gym, workout tracking, and AI Coach via Home Assistant Ingress"
 url: "https://github.com/ChadJPetersen/home-assistant-opengym"

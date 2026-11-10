@@ -2,4 +2,4 @@ build_from:
   amd64: ghcr.io/home-assistant/base:latest
   aarch64: ghcr.io/home-assistant/base:latest
 args:
-  OPENGYM_VERSION: "1.4.3"
+  OPENGYM_VERSION: "1.4.4"

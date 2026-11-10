@@ -4,6 +4,18 @@ All notable changes to the **Home Assistant app wrapper** are recorded here, new
 
 Versions are `<openGym upstream version>-<Home Assistant wrapper revision>`. Revisions may contain application features, Home Assistant integration updates, or packaging fixes. Entries describe repository changes; production behavior still depends on Home Assistant and browser versions. Historical entries below summarize the commits made while the wrapper was first developed.
 
+## 1.4.4-0 — 2026-11-09
+
+### Updated
+- Upgraded the pinned upstream API and web images from openGym **1.4.3** to **1.4.4**, enabling the upstream `/api/watch/*` authenticated watch relay, including one-time pairing and durable `setDone` events.
+- The watch relay can be reached through the same opt-in HTTPS API proxy route already used by mobile clients; **no new open host port** is needed.
+- Added documentation for pairing an experimental Garmin fēnix 5S Connect IQ app through OpenGym's existing watch mailbox.
+
+### Compatibility
+- **Back up the Home Assistant app before updating.** Existing persistent data stays under `/data/opengym`; the updated upstream application may migrate its own data on startup.
+- The official Android openGym app must also run a compatible release (1.4.4 or later) to consume watch events. Its WebView processes the queue while active; backgrounded/locked Android may not update until reopened.
+- The separate Garmin project remains experimental, uncompiled against real fēnix 5S device files.
+
 ## 1.4.3-8 — 2026-10-27
 
 ### Changed
